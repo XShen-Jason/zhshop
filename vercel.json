@@ -1,0 +1,8 @@
+{
+    "crons": [
+        {
+            "path": "/api/lottery/auto-draw",
+            "schedule": "*/5 * * * *"
+        }
+    ]
+}
