@@ -248,6 +248,9 @@ export default function UserPage() {
                         <div className="p-16 text-center text-gray-400 flex flex-col items-center">
                             <ShoppingBag size={48} className="mb-4 opacity-20" />
                             <p>暂无订单记录</p>
+                            <Link href="/products" className="mt-4 text-indigo-600 font-medium hover:underline">
+                                去选购商品 →
+                            </Link>
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-50">

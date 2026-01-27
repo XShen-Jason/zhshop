@@ -45,13 +45,14 @@ export async function signup(formData: FormData) {
 
     // Create user profile in the users table
     if (authData.user) {
-        const { error: profileError } = await supabase.from('users').insert({
+        // Use upsert to handle potential race conditions with database triggers
+        const { error: profileError } = await supabase.from('users').upsert({
             id: authData.user.id,
             email,
             name,
             role: 'USER',
             points: 100, // Welcome bonus
-        });
+        }, { onConflict: 'id' });
 
         if (profileError) {
             console.error('Error creating user profile:', profileError);
