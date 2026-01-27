@@ -169,7 +169,20 @@ export default function ProductDetailPage() {
                                     >
                                         <Minus size={16} />
                                     </button>
-                                    <span className="mx-6 text-xl font-bold text-gray-900 min-w-[40px] text-center">{quantity}</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max={typeof product.stock === 'number' ? product.stock : 999}
+                                        value={quantity}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value, 10);
+                                            if (!isNaN(val) && val >= 1) {
+                                                const maxStock = typeof product.stock === 'number' ? product.stock : 999;
+                                                setQuantity(Math.min(maxStock, val));
+                                            }
+                                        }}
+                                        className="mx-2 w-16 text-center text-xl font-bold text-gray-900 bg-transparent border-none outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
                                     <button
                                         type="button"
                                         onClick={() => setQuantity(q => {

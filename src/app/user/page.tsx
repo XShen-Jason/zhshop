@@ -407,22 +407,6 @@ export default function UserPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setEditingContact({
-                                                    type: 'lottery',
-                                                    id: entry.lotteryId,
-                                                    title: entry.lottery?.title || '未知抽奖',
-                                                    contact: entry.contactInfo || ''
-                                                });
-                                            }}
-                                            className="p-1.5 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded transition"
-                                            title="修改联系方式"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
                                         <Badge status={entry.lottery?.status || '未知'} />
                                         <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600" />
                                     </div>

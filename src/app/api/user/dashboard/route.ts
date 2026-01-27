@@ -37,7 +37,6 @@ export async function GET() {
                     lottery_id,
                     entered_at,
                     is_winner,
-                    contact_info,
                     lotteries (
                         id,
                         title,
@@ -114,7 +113,6 @@ export async function GET() {
             lotteryId: entry.lottery_id,
             enteredAt: entry.entered_at,
             isWinner: entry.is_winner,
-            contactInfo: entry.contact_info,
             lottery: entry.lotteries ? {
                 id: entry.lotteries.id,
                 title: entry.lotteries.title,
