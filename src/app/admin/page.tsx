@@ -662,7 +662,7 @@ export default function AdminPage() {
                             </div>
                             <div className="space-y-1"><label className="text-xs font-bold text-gray-500">库存数量</label><input type="number" min="0" className="w-full border p-2 rounded" value={editingProduct?.stock ?? 0} onChange={e => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })} /></div>
                             <div className="space-y-1"><label className="text-xs font-bold text-gray-500">描述</label><textarea className="w-full border p-2 rounded" value={editingProduct?.description || ''} onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })} /></div>
-                            <div className="space-y-1"><label className="text-xs font-bold text-gray-500">特点 (每行一个)</label><textarea className="w-full border p-2 rounded" value={typeof editingProduct?.features === 'string' ? editingProduct.features : editingProduct?.features?.join('\\n') || ''} onChange={e => setEditingProduct({ ...editingProduct, features: e.target.value })} /></div>
+                            <div className="space-y-1"><label className="text-xs font-bold text-gray-500">特点 (每行一个)</label><textarea className="w-full border p-2 rounded" value={typeof editingProduct?.features === 'string' ? editingProduct.features : editingProduct?.features?.join('\\n') || ''} onChange={e => setEditingProduct({ ...editingProduct, features: e.target.value } as any)} /></div>
                             <label className="flex items-center"><input type="checkbox" checked={editingProduct?.inStock ?? true} onChange={e => setEditingProduct({ ...editingProduct, inStock: e.target.checked })} /> <span className="ml-2">上架销售</span></label>
                             <div className="flex justify-end gap-2 mt-4"><button type="button" onClick={() => setShowProductModal(false)} className="px-3 py-1 bg-gray-200 rounded">取消</button><button type="submit" disabled={actionLoading} className="px-3 py-1 bg-indigo-600 text-white rounded">保存</button></div>
                         </form>
@@ -697,7 +697,7 @@ export default function AdminPage() {
                                 <p className="text-xs text-blue-600 mt-1 pl-5">开启后，当本团达到目标人数锁单时，系统将自动创建一个相同配置的新团。</p>
                             </div>
                             <div className="space-y-1"><label className="text-xs font-bold text-gray-500">描述</label><textarea className="w-full border p-2 rounded" value={editingGroup?.description || ''} onChange={e => setEditingGroup({ ...editingGroup, description: e.target.value })} /></div>
-                            <div className="space-y-1"><label className="text-xs font-bold text-gray-500">特点 (每行一个)</label><textarea className="w-full border p-2 rounded" value={typeof editingGroup?.features === 'string' ? editingGroup.features : (editingGroup?.features as string[])?.join('\\n') || ''} onChange={e => setEditingGroup({ ...editingGroup, features: e.target.value })} /></div>
+                            <div className="space-y-1"><label className="text-xs font-bold text-gray-500">特点 (每行一个)</label><textarea className="w-full border p-2 rounded" value={typeof editingGroup?.features === 'string' ? editingGroup.features : (editingGroup?.features as string[])?.join('\\n') || ''} onChange={e => setEditingGroup({ ...editingGroup, features: e.target.value } as any)} /></div>
                             <div className="flex justify-end gap-2 mt-4"><button type="button" onClick={() => setShowGroupModal(false)} className="px-3 py-1 bg-gray-200 rounded">取消</button><button type="submit" disabled={actionLoading} className="px-3 py-1 bg-indigo-600 text-white rounded">保存</button></div>
                         </form>
                     </div>
@@ -727,7 +727,7 @@ export default function AdminPage() {
                                 <div className="space-y-1"><label className="text-xs font-bold text-gray-500">最低参与人数</label><input type="number" min="1" className="w-full border p-2 rounded" value={editingLottery?.minParticipants || 1} onChange={e => setEditingLottery({ ...editingLottery, minParticipants: parseInt(e.target.value) })} /></div>
                             </div>
                             <div className="space-y-1"><label className="text-xs font-bold text-gray-500">描述</label><textarea className="w-full border p-2 rounded" value={editingLottery?.description || ''} onChange={e => setEditingLottery({ ...editingLottery, description: e.target.value })} /></div>
-                            <div className="space-y-1"><label className="text-xs font-bold text-gray-500">奖品列表 (每行一个)</label><textarea className="w-full border p-2 rounded" value={typeof editingLottery?.prizes === 'string' ? editingLottery.prizes : (editingLottery?.prizes as string[])?.join('\\n') || ''} onChange={e => setEditingLottery({ ...editingLottery, prizes: e.target.value })} /></div>
+                            <div className="space-y-1"><label className="text-xs font-bold text-gray-500">奖品列表 (每行一个)</label><textarea className="w-full border p-2 rounded" value={typeof editingLottery?.prizes === 'string' ? editingLottery.prizes : (editingLottery?.prizes as string[])?.join('\\n') || ''} onChange={e => setEditingLottery({ ...editingLottery, prizes: e.target.value } as any)} /></div>
                             <div className="flex justify-end gap-2 mt-4"><button type="button" onClick={() => setShowLotteryModal(false)} className="px-3 py-1 bg-gray-200 rounded">取消</button><button type="submit" disabled={actionLoading} className="px-3 py-1 bg-indigo-600 text-white rounded">保存</button></div>
                         </form>
                     </div>
@@ -756,7 +756,7 @@ export default function AdminPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-gray-500">标签 (逗号分隔)</label>
-                                <input className="w-full border p-2 rounded" value={typeof editingTutorial?.tags === 'string' ? editingTutorial.tags : editingTutorial?.tags?.join(',') || ''} onChange={e => setEditingTutorial({ ...editingTutorial, tags: e.target.value })} />
+                                <input className="w-full border p-2 rounded" value={typeof editingTutorial?.tags === 'string' ? editingTutorial.tags : editingTutorial?.tags?.join(',') || ''} onChange={e => setEditingTutorial({ ...editingTutorial, tags: e.target.value } as any)} />
                             </div>
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-gray-500">内容 (Markdown)</label>

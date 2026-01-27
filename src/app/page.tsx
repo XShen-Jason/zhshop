@@ -22,11 +22,12 @@ export default function HomePage() {
         fetchingRef.current = true;
 
         try {
+            // Use limit params to reduce data transfer - only fetch what we need
             const [productsRes, tutorialsRes, groupsRes, lotteriesRes] = await Promise.all([
-                fetch('/api/products'),
-                fetch('/api/tutorials'),
-                fetch('/api/groups'),
-                fetch('/api/lottery')
+                fetch('/api/products?limit=8'),   // Display max 8 products
+                fetch('/api/tutorials?limit=2'),  // Display max 2 tutorials
+                fetch('/api/groups?limit=6'),     // Display max 3, but need buffer for filtering
+                fetch('/api/lottery?limit=6')     // Display max 3, but need buffer for filtering
             ]);
 
             if (productsRes.ok) setProducts(await productsRes.json());

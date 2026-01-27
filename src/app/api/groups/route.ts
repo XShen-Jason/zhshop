@@ -1,14 +1,23 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const url = new URL(request.url);
+        const limit = url.searchParams.get('limit');
+
         const supabase = await createClient();
         // Fetch groups with participant count
-        const { data, error } = await supabase
+        let query = supabase
             .from('group_buys')
             .select('*, group_participants(count)')
             .order('created_at', { ascending: false });
+
+        if (limit) {
+            query = query.limit(parseInt(limit, 10));
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 

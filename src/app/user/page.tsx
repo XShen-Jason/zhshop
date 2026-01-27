@@ -81,72 +81,37 @@ export default function UserPage() {
         if (fetchingRef.current) return;
         fetchingRef.current = true;
 
-        const supabase = createClient();
-
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            router.push('/auth/login');
-            fetchingRef.current = false;
-            return;
-        }
-
-        setUser(user);
-
-        // Get user profile
-        const { data: profileData } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-
-        if (profileData) {
-            setProfile({
-                id: profileData.id,
-                name: profileData.name || user.email?.split('@')[0] || 'User',
-                email: profileData.email || user.email || '',
-                role: profileData.role || 'USER',
-                points: profileData.points || 0,
-                checkInStreak: profileData.check_in_streak || 0
-            });
-        } else {
-            setProfile({
-                id: user.id,
-                name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-                email: user.email || '',
-                role: 'USER',
-                points: 0,
-                checkInStreak: 0
-            });
-        }
-
-        // Fetch all data in parallel
         try {
-            const [ordersRes, lotteriesRes, groupsRes] = await Promise.all([
-                fetch('/api/orders'),
-                fetch('/api/user/lotteries'),
-                fetch('/api/user/groups')
-            ]);
+            // Single API call to get all user data
+            const res = await fetch('/api/user/dashboard');
 
-            if (ordersRes.ok) {
-                const ordersData = await ordersRes.json();
-                setOrders(ordersData);
+            if (!res.ok) {
+                if (res.status === 401) {
+                    router.push('/auth/login');
+                    return;
+                }
+                throw new Error('Failed to fetch dashboard');
             }
-            if (lotteriesRes.ok) {
-                const lotteriesData = await lotteriesRes.json();
-                setLotteries(lotteriesData);
-            }
-            if (groupsRes.ok) {
-                const groupsData = await groupsRes.json();
-                setGroups(groupsData);
-            }
+
+            const data = await res.json();
+
+            // Set user from profile data
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+
+            // Set all data from single response
+            setProfile(data.profile);
+            setOrders(data.orders || []);
+            setLotteries(data.lotteries || []);
+            setGroups(data.groups || []);
         } catch (error) {
             console.error('Error fetching user data:', error);
+            router.push('/auth/login');
+        } finally {
+            setLoading(false);
+            fetchingRef.current = false;
         }
-
-        setLoading(false);
-        fetchingRef.current = false;
     }, [router]);
 
     useEffect(() => {
