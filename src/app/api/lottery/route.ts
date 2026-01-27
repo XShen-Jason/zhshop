@@ -12,9 +12,12 @@ export async function GET(request: Request) {
         // Get current user (optional - for participation status)
         const { data: { user } } = await supabase.auth.getUser();
 
+        // Prioritize pending lotteries (待开奖) first, then ended ones
+        // We'll fetch all then sort client-side for status ordering
         let query = supabase
             .from('lotteries')
             .select('*, lottery_entries(count)')
+            .order('status', { ascending: true }) // 待开奖 sorts before 已结束
             .order('draw_date', { ascending: true });
 
         if (limit) {

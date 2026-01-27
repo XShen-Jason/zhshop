@@ -324,19 +324,15 @@ export async function PATCH(request: Request) {
 
         if (error) throw error;
 
-        // Restore stock if admin cancels a PRODUCT order
+        // Restore stock if admin cancels a PRODUCT order using RPC
         if (status === '已取消' && order && order.item_type === 'PRODUCT' && order.item_id) {
             const qty = order.quantity || 1;
-            const { data: product } = await supabase
-                .from('products')
-                .select('stock')
-                .eq('id', order.item_id)
-                .single();
-            if (product) {
-                await supabase
-                    .from('products')
-                    .update({ stock: (product.stock || 0) + qty })
-                    .eq('id', order.item_id);
+            const { error: stockError } = await supabase.rpc('adjust_product_stock', {
+                p_product_id: order.item_id,
+                p_quantity_change: qty
+            });
+            if (stockError) {
+                console.error('Error restoring stock on admin cancel:', stockError);
             }
         }
 
@@ -402,27 +398,30 @@ export async function PUT(request: Request) {
         // Adjust stock for PRODUCT orders if quantity changed
         if (order.item_type === 'PRODUCT' && order.item_id && newQuantity !== oldQuantity) {
             const stockDiff = oldQuantity - newQuantity; // positive if reducing order, negative if increasing
-            const { data: product } = await supabase
-                .from('products')
-                .select('stock')
-                .eq('id', order.item_id)
-                .single();
 
-            if (product) {
-                const newStock = (product.stock || 0) + stockDiff;
+            // Validate if increasing order quantity
+            if (stockDiff < 0) {
+                const { data: product } = await supabase
+                    .from('products')
+                    .select('stock')
+                    .eq('id', order.item_id)
+                    .single();
 
-                // Validate if increasing order quantity
-                if (stockDiff < 0 && newStock < 0) {
+                if (product && (product.stock || 0) + stockDiff < 0) {
                     return NextResponse.json({
                         error: `库存不足，当前库存: ${product.stock}`,
                         availableStock: product.stock
                     }, { status: 400 });
                 }
+            }
 
-                await supabase
-                    .from('products')
-                    .update({ stock: Math.max(0, newStock) })
-                    .eq('id', order.item_id);
+            // Use RPC to adjust stock (bypasses RLS with SECURITY DEFINER)
+            const { error: stockError } = await supabase.rpc('adjust_product_stock', {
+                p_product_id: order.item_id,
+                p_quantity_change: stockDiff
+            });
+            if (stockError) {
+                console.error('Error adjusting stock:', stockError);
             }
         }
 
@@ -482,19 +481,15 @@ export async function DELETE(request: Request) {
 
         if (error) throw error;
 
-        // Restore stock for PRODUCT orders
+        // Restore stock for PRODUCT orders using RPC (bypasses RLS)
         if (order.item_type === 'PRODUCT' && order.item_id) {
             const qty = order.quantity || 1;
-            const { data: product } = await supabase
-                .from('products')
-                .select('stock')
-                .eq('id', order.item_id)
-                .single();
-            if (product) {
-                await supabase
-                    .from('products')
-                    .update({ stock: (product.stock || 0) + qty })
-                    .eq('id', order.item_id);
+            const { error: stockError } = await supabase.rpc('adjust_product_stock', {
+                p_product_id: order.item_id,
+                p_quantity_change: qty // positive = restore stock
+            });
+            if (stockError) {
+                console.error('Error restoring stock:', stockError);
             }
         }
 
