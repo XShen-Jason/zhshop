@@ -180,9 +180,16 @@ function LotteryCard({ lottery: l, isEnded = false }: { lottery: Lottery; isEnde
                     <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-50 blur-2xl transition-colors ${isEnded ? 'bg-gray-100' : 'bg-pink-100 group-hover:bg-pink-200'}`}></div>
 
                     <div className="flex justify-between items-start mb-4 relative z-10">
-                        <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${isEnded ? 'bg-gray-100 text-gray-500' : 'bg-pink-50 text-pink-600'}`}>
-                            Lucky Draw
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${isEnded ? 'bg-gray-100 text-gray-500' : 'bg-pink-50 text-pink-600'}`}>
+                                抽奖
+                            </span>
+                            {l.hasEntered && (
+                                <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-600">
+                                    已参与
+                                </span>
+                            )}
+                        </div>
                         <Badge status={l.status} />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2 relative z-10">{l.title}</h3>
@@ -205,9 +212,11 @@ function LotteryCard({ lottery: l, isEnded = false }: { lottery: Lottery; isEnde
                             </span>
                             <span className={`px-5 py-2 rounded-full text-sm font-bold shadow-lg transition-all ${isEnded
                                 ? 'bg-gray-400 text-white cursor-default'
-                                : 'bg-pink-600 text-white shadow-pink-200 group-hover:bg-pink-700'
+                                : l.hasEntered
+                                    ? 'bg-green-500 text-white shadow-green-200'
+                                    : 'bg-pink-600 text-white shadow-pink-200 group-hover:bg-pink-700'
                                 }`}>
-                                {isEnded ? '查看结果' : '去抽奖'}
+                                {isEnded ? '查看结果' : l.hasEntered ? '已参与' : '去抽奖'}
                             </span>
                         </div>
                     </div>

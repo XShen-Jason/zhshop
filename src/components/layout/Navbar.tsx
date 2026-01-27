@@ -57,11 +57,11 @@ export const Navbar: React.FC = () => {
     useEffect(() => {
         const supabase = createClient();
 
-        // Get initial user
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            setUser(user);
+        // Get initial session (faster than getUser which verifies with server)
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
             setLoading(false);
-            if (user) {
+            if (session?.user) {
                 fetchCheckInStatus();
             }
         });

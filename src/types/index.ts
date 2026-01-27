@@ -77,6 +77,7 @@ export interface Lottery {
     participants: number;
     description: string;
     prizes: string[];
+    hasEntered?: boolean;
 }
 
 export interface Order {
@@ -90,7 +91,7 @@ export interface Order {
     contactDetails: string;
     notes?: string;
     cost?: number;
-    currency?: 'USD' | 'POINTS';
+    currency?: 'USD' | 'CNY' | 'POINTS';
     quantity?: number;
 }
 

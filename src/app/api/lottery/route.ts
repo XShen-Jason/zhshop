@@ -8,6 +8,10 @@ export async function GET(request: Request) {
         const limit = url.searchParams.get('limit');
 
         const supabase = await createClient();
+
+        // Get current user (optional - for participation status)
+        const { data: { user } } = await supabase.auth.getUser();
+
         let query = supabase
             .from('lotteries')
             .select('*, lottery_entries(count)')
@@ -20,6 +24,16 @@ export async function GET(request: Request) {
         const { data, error } = await query;
 
         if (error) throw error;
+
+        // If user is logged in, get their entries to mark participated lotteries
+        let userEntryLotteryIds: Set<string> = new Set();
+        if (user) {
+            const { data: entries } = await supabase
+                .from('lottery_entries')
+                .select('lottery_id')
+                .eq('user_id', user.id);
+            userEntryLotteryIds = new Set((entries || []).map(e => e.lottery_id));
+        }
 
         const now = new Date();
 
@@ -57,7 +71,8 @@ export async function GET(request: Request) {
             status: l.status,
             participants: l.lottery_entries?.[0]?.count ?? l.participants ?? 0,
             description: l.description,
-            prizes: l.prizes || []
+            prizes: l.prizes || [],
+            hasEntered: userEntryLotteryIds.has(l.id)
         }));
 
         return NextResponse.json(lotteries);

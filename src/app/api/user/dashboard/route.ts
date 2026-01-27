@@ -21,11 +21,12 @@ export async function GET() {
             // 1. Profile
             supabase.from('users').select('*').eq('id', user.id).single(),
 
-            // 2. Orders (user's own orders only)
+            // 2. Orders (user's own orders only, excluding GROUP type - those show in Groups tab)
             supabase
                 .from('orders')
                 .select('*')
                 .eq('user_id', user.id)
+                .neq('item_type', 'GROUP')
                 .order('created_at', { ascending: false }),
 
             // 3. Lottery entries with lottery details

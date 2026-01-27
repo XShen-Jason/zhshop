@@ -12,13 +12,41 @@ export async function GET() {
         }
 
         // Get user profile with points and check-in info
-        const { data: profile, error } = await supabase
+        let { data: profile, error } = await supabase
             .from('users')
             .select('points, last_check_in, check_in_streak')
             .eq('id', user.id)
             .single();
 
-        if (error) throw error;
+        // Self-healing: Create profile if missing
+        if (error && error.code === 'PGRST116') {
+            console.log('Profile missing for user, creating one...', user.id);
+            const { error: insertError } = await supabase.from('users').insert({
+                id: user.id,
+                email: user.email!,
+                name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+                role: 'USER',
+                points: 100 // Give welcome points even for late creation
+            });
+
+            if (insertError) {
+                console.error('Failed to auto-create profile:', insertError);
+                throw insertError;
+            }
+
+            // Retry fetch
+            const { data: newProfile, error: retryError } = await supabase
+                .from('users')
+                .select('points, last_check_in, check_in_streak')
+                .eq('id', user.id)
+                .single();
+
+            if (retryError) throw retryError;
+            profile = newProfile;
+            error = null;
+        } else if (error) {
+            throw error;
+        }
 
         // Check if user can check in today
         const today = new Date().toISOString().split('T')[0];
