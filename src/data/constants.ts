@@ -25,6 +25,7 @@ export const PRODUCTS: Product[] = [
         description: '高速低延迟，不仅适合建站，也适合作为个人的开发测试环境。',
         price: 15.00,
         category: 'VPS服务器',
+        stock: 10,
         inStock: true,
         features: ['1 Core CPU', '2GB RAM', 'CN2 GIA 线路直连'],
         specs: 'Ubuntu 22.04 LTS',
@@ -36,6 +37,7 @@ export const PRODUCTS: Product[] = [
         description: '性价比之选，适合新手入门学习 Linux。',
         price: 5.00,
         category: 'VPS服务器',
+        stock: 20,
         inStock: true,
         features: ['1 Core CPU', '1GB RAM', '1Gbps 带宽'],
         specs: 'Debian 11'
@@ -46,6 +48,7 @@ export const PRODUCTS: Product[] = [
         description: '稳定可靠的 GPT-4 共享访问权限，支持最新的插件功能。',
         price: 5.00,
         category: '账号合租',
+        stock: 5,
         inStock: true,
         features: ['共享访问', '包含 GPT-4', '禁止 API 调用'],
         specs: '有效期 30 天',
@@ -57,6 +60,7 @@ export const PRODUCTS: Product[] = [
         description: '无限出图，隐私模式，设计师首选。',
         price: 10.00,
         category: '账号合租',
+        stock: 3,
         inStock: true,
         features: ['Fast Mode', '隐私保护', '独立频道'],
         specs: '有效期 30 天'
@@ -67,6 +71,7 @@ export const PRODUCTS: Product[] = [
         description: '4K 超高清画质，家庭组独立车位，稳定不掉线。',
         price: 8.50,
         category: '娱乐影音',
+        stock: 0,
         inStock: false,
         features: ['4K UHD 画质', '独立个人档案'],
         specs: '可续费'
@@ -77,6 +82,7 @@ export const PRODUCTS: Product[] = [
         description: '无广告观看，后台播放，YouTube Music。',
         price: 2.50,
         category: '娱乐影音',
+        stock: 15,
         inStock: true,
         features: ['无广告', 'Music Premium'],
         specs: '长期稳定'

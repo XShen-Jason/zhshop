@@ -53,7 +53,7 @@ export async function GET(
                 .eq('lottery_id', id)
                 .eq('is_winner', true);
 
-            winners = (winnerEntries || []).map((entry) => ({
+            winners = (winnerEntries || []).map((entry: any) => ({
                 name: maskName(Array.isArray(entry.users) ? entry.users[0]?.name : entry.users?.name || '匿名用户'),
                 isWinner: true
             }));
