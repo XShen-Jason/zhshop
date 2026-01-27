@@ -69,12 +69,18 @@ export async function logout() {
     redirect('/');
 }
 
+import { headers } from 'next/headers';
+
 export async function forgotPassword(formData: FormData) {
     const supabase = await createClient();
     const email = formData.get('email') as string;
 
+    // 动态获取当前请求的 Origin，适配预览环境和生产环境
+    const headersList = await headers();
+    const origin = headersList.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?next=/auth/reset-password`,
+        redirectTo: `${origin}/auth/callback?next=/auth/reset-password`,
     });
 
     if (error) {
