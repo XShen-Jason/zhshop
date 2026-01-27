@@ -191,16 +191,16 @@ export default function UserPage() {
                     <p className="text-3xl font-extrabold text-blue-600">{orders.length}</p>
                 </Card>
                 <Card className="p-6 bg-gradient-to-br from-purple-50 to-white border-purple-100">
-                    <h3 className="text-purple-900 font-bold mb-2 text-lg">待处理</h3>
+                    <h3 className="text-purple-900 font-bold mb-2 text-lg">待联系</h3>
                     <p className="text-3xl font-extrabold text-purple-600">{pendingCount}</p>
                 </Card>
                 <Card className="p-6 bg-gradient-to-br from-pink-50 to-white border-pink-100">
-                    <h3 className="text-pink-900 font-bold mb-2 text-lg">参与抽奖</h3>
-                    <p className="text-3xl font-extrabold text-pink-600">{lotteries.length}</p>
+                    <h3 className="text-pink-900 font-bold mb-2 text-lg">抽奖中奖</h3>
+                    <p className="text-3xl font-extrabold text-pink-600">{wonCount}/{lotteries.length}</p>
                 </Card>
-                <Card className="p-6 bg-gradient-to-br from-amber-50 to-white border-amber-100">
-                    <h3 className="text-amber-900 font-bold mb-2 text-lg">中奖次数</h3>
-                    <p className="text-3xl font-extrabold text-amber-600">{wonCount}</p>
+                <Card className="p-6 bg-gradient-to-br from-green-50 to-white border-green-100">
+                    <h3 className="text-green-900 font-bold mb-2 text-lg">拼团锁定</h3>
+                    <p className="text-3xl font-extrabold text-green-600">{groups.filter(g => g.group?.status === '已锁单' || g.group?.status === '已结束').length}/{groups.length}</p>
                 </Card>
             </div>
 

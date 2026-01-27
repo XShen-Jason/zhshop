@@ -101,7 +101,7 @@ export async function POST(request: Request) {
                 contact_details: body.contact,
                 status: '待联系',
                 cost: body.cost,
-                currency: body.currency || 'USD',
+                currency: body.currency || 'CNY',
                 quantity: body.quantity || 1
             })
             .select()

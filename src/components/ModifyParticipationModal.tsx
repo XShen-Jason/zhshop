@@ -83,7 +83,7 @@ export function ModifyParticipationModal({
                         contact,
                         cost: groupPrice * quantity,
                         quantity,
-                        currency: 'USD'
+                        currency: 'CNY'
                     })
                 });
                 const result = await res.json();

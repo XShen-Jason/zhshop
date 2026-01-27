@@ -12,17 +12,11 @@ export async function GET(request: Request) {
         // Get current user (optional - for participation status)
         const { data: { user } } = await supabase.auth.getUser();
 
-        // Prioritize pending lotteries (待开奖) first, then ended ones
-        // We'll fetch all then sort client-side for status ordering
-        let query = supabase
+        // Fetch all lotteries - we'll sort and limit in JS
+        const query = supabase
             .from('lotteries')
             .select('*, lottery_entries(count)')
-            .order('status', { ascending: true }) // 待开奖 sorts before 已结束
             .order('draw_date', { ascending: true });
-
-        if (limit) {
-            query = query.limit(parseInt(limit, 10));
-        }
 
         const { data, error } = await query;
 
@@ -64,7 +58,7 @@ export async function GET(request: Request) {
             }
         }
 
-        const lotteries = (data || []).map(l => ({
+        let lotteries = (data || []).map(l => ({
             id: l.id,
             title: l.title,
             drawDate: l.draw_date,
@@ -77,6 +71,18 @@ export async function GET(request: Request) {
             prizes: l.prizes || [],
             hasEntered: userEntryLotteryIds.has(l.id)
         }));
+
+        // Sort: pending (待开奖) first, then ended (已结束), then by draw_date
+        lotteries.sort((a, b) => {
+            if (a.status === '待开奖' && b.status !== '待开奖') return -1;
+            if (a.status !== '待开奖' && b.status === '待开奖') return 1;
+            return new Date(a.drawDate).getTime() - new Date(b.drawDate).getTime();
+        });
+
+        // Apply limit after sorting
+        if (limit) {
+            lotteries = lotteries.slice(0, parseInt(limit, 10));
+        }
 
         return NextResponse.json(lotteries);
     } catch (error) {
