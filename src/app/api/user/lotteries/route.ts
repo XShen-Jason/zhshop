@@ -33,7 +33,20 @@ export async function GET() {
 
         if (error) throw error;
 
-        const lotteryHistory = (entries || []).map((entry: any) => ({
+        const lotteryHistory = (entries || []).map((entry: {
+            id: string;
+            lottery_id: string;
+            entered_at: string;
+            is_winner: boolean;
+            lotteries: {
+                id: string;
+                title: string;
+                status: string;
+                draw_date: string;
+                entry_cost: number;
+                prizes: string[];
+            } | null;
+        }) => ({
             id: entry.id,
             lotteryId: entry.lottery_id,
             enteredAt: entry.entered_at,
