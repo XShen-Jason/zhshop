@@ -46,6 +46,14 @@ export default function HomePage() {
         fetchData();
     }, [fetchData]);
 
+    // Debug: log lotteries to see what's being received
+    useEffect(() => {
+        if (!loading && lotteries.length > 0) {
+            console.log('Homepage lotteries received:', lotteries);
+            console.log('Lotteries with 待开奖 status:', lotteries.filter(l => l.status === '待开奖'));
+        }
+    }, [loading, lotteries]);
+
     const categories = ['全部', ...Array.from(new Set(products.map(p => p.category)))];
 
     const isAvailable = (p: Product) => {
