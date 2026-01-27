@@ -86,6 +86,20 @@ function LoginForm() {
                     </div>
                 </div>
 
+                <div className="flex items-center justify-between">
+                    <label className="flex items-center cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            name="rememberMe"
+                            className="w-4 h-4 text-indigo-600 bg-gray-50 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-600">自动登录</span>
+                    </label>
+                    <Link href="/auth/forgot-password" className="text-sm text-indigo-600 font-medium hover:underline">
+                        忘记密码？
+                    </Link>
+                </div>
+
                 <button
                     type="submit"
                     disabled={loading}
