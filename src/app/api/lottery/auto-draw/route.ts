@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
  * Auto-draw endpoint - checks for lotteries past their draw date and executes draw
@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
  */
 export async function POST() {
     try {
-        const supabase = await createClient();
+        const supabase = createAdminClient();
         const now = new Date();
 
         // Use local time string format to match how dates are stored from admin panel

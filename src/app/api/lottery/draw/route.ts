@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(request: Request) {
     try {
+        // Use regular client for auth verification
         const supabase = await createClient();
+        // Use admin client for updates (bypasses RLS)
+        const adminSupabase = createAdminClient();
 
         // Auth & Admin check
         const { data: { user } } = await supabase.auth.getUser();
@@ -62,8 +66,8 @@ export async function POST(request: Request) {
         }
 
         if (participantCount === 0) {
-            // No participants - just close the lottery
-            await supabase
+            // No participants - just close the lottery (use admin client)
+            await adminSupabase
                 .from('lotteries')
                 .update({ status: '已结束' })
                 .eq('id', lotteryId);
@@ -97,8 +101,8 @@ export async function POST(request: Request) {
         for (const winner of winners) {
             console.log('Attempting to mark winner:', winner.user_id);
 
-            // Use rpc or direct update
-            const { data: updateData, error: updateError } = await supabase
+            // Use admin client to bypass RLS
+            const { data: updateData, error: updateError } = await adminSupabase
                 .from('lottery_entries')
                 .update({ is_winner: true })
                 .eq('lottery_id', lotteryId)
@@ -119,8 +123,8 @@ export async function POST(request: Request) {
             }
         }
 
-        // Update lottery status
-        const { error: statusError } = await supabase
+        // Update lottery status (use admin client)
+        const { error: statusError } = await adminSupabase
             .from('lotteries')
             .update({ status: '已结束' })
             .eq('id', lotteryId);
