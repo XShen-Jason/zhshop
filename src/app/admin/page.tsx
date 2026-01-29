@@ -118,6 +118,14 @@ export default function AdminPage() {
 
     const fetchLotteries = async (silent = false) => {
         try {
+            // Trigger auto-draw check before fetching lottery list
+            // This ensures any lotteries past draw date are automatically processed
+            try {
+                await fetch('/api/lottery/auto-draw', { method: 'POST' });
+            } catch (e) {
+                console.error('Auto-draw check failed:', e);
+            }
+
             const res = await fetch('/api/lottery');
             if (res.ok) setLotteries(await res.json());
         } catch (error) {

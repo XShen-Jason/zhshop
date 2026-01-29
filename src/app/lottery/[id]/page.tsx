@@ -51,7 +51,20 @@ export default function LotteryDetailPage() {
     }, []);
 
     useEffect(() => {
-        if (params.id) fetchLottery(params.id as string);
+        async function init() {
+            if (!params.id) return;
+
+            // Trigger auto-draw check before fetching lottery data
+            // This ensures lottery status is up-to-date if draw time has passed
+            try {
+                await fetch('/api/lottery/auto-draw', { method: 'POST' });
+            } catch (e) {
+                console.error('Auto-draw check failed:', e);
+            }
+
+            fetchLottery(params.id as string);
+        }
+        init();
     }, [params.id, fetchLottery]);
 
     const handleEnter = async () => {

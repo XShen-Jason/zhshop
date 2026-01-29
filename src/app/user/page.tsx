@@ -82,6 +82,13 @@ export default function UserPage() {
         fetchingRef.current = true;
 
         try {
+            // Trigger auto-draw check to ensure lottery statuses are up to date
+            try {
+                await fetch('/api/lottery/auto-draw', { method: 'POST' });
+            } catch (e) {
+                console.error('Auto-draw check failed:', e);
+            }
+
             // Single API call to get all user data
             const res = await fetch('/api/user/dashboard');
 
