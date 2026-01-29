@@ -41,6 +41,8 @@ export default function LotteryDetailPage() {
             if (res.ok) {
                 const data = await res.json();
                 setLottery(data);
+            } else {
+                router.replace('/lottery');
             }
         } catch (err) {
             console.error('Error fetching lottery:', err);
@@ -104,7 +106,7 @@ export default function LotteryDetailPage() {
     if (!lottery) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
-                <p className="text-gray-500">抽奖不存在</p>
+                <p className="text-gray-500">抽奖不存在，正在跳转...</p>
             </div>
         );
     }

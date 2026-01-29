@@ -370,10 +370,28 @@ export default function AdminPage() {
 
     const handleParticipantUpdate = async (userId: string, currentQty: number) => {
         if (!currentViewId) return;
-        const newQtyStr = prompt('请输入新的数量:', currentQty.toString());
+
+        // Find the group to check limits
+        const group = groups.find(g => g.id === currentViewId);
+        let maxQtyMsg = '';
+        let maxAllowed = 999;
+
+        if (group && currentViewType === 'GROUP') {
+            // Remaining slots = target - current
+            // But we are editing an EXISTING participation, so we reclaim 'currentQty' slots first
+            const remaining = (group.targetCount || 0) - (group.currentCount || 0);
+            maxAllowed = remaining + currentQty;
+            maxQtyMsg = ` (当前库存允许最大: ${maxAllowed})`;
+        }
+
+        const newQtyStr = prompt(`请输入新的数量${maxQtyMsg}:`, currentQty.toString());
         if (newQtyStr === null) return;
         const newQty = parseInt(newQtyStr);
         if (isNaN(newQty) || newQty < 1) return alert('请输入有效数量');
+
+        if (newQty > maxAllowed) {
+            return alert(`修改失败：数量不能超过 ${maxAllowed}`);
+        }
 
         try {
             const res = await fetch('/api/groups/participants', {
@@ -565,7 +583,7 @@ export default function AdminPage() {
                                     {g.status}
                                 </span>
                             </div>
-                            <div className="text-2xl font-bold text-indigo-600 mb-2">${g.price}</div>
+                            <div className="text-2xl font-bold text-indigo-600 mb-2">¥{g.price}</div>
                             <div className="flex justify-between items-end mb-3">
                                 <div className="text-sm text-gray-600">
                                     进度: <span className="font-bold text-gray-900">{g.currentCount}</span>/{g.targetCount}

@@ -129,7 +129,7 @@ export default function GroupsPage() {
                             <ProgressBar current={g.currentCount} target={g.targetCount} />
 
                             <div className="mt-6 flex items-center justify-between">
-                                <span className="text-2xl font-bold text-gray-900">${g.price}<span className="text-sm font-normal text-gray-400">/人</span></span>
+                                <span className="text-2xl font-bold text-gray-900">¥{g.price}<span className="text-sm font-normal text-gray-400">/人</span></span>
 
                                 {g.status === '已结束' ? (
                                     // 已结束的团统一显示已结束

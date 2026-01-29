@@ -29,6 +29,8 @@ export default function ProductDetailPage() {
             if (res.ok) {
                 const data = await res.json();
                 setProduct(data);
+            } else {
+                router.replace('/products');
             }
         } catch (error) {
             console.error('Error fetching product:', error);
@@ -92,7 +94,7 @@ export default function ProductDetailPage() {
     if (!product) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
-                <p className="text-gray-500">商品不存在</p>
+                <p className="text-gray-500">商品不存在，正在跳转...</p>
             </div>
         );
     }

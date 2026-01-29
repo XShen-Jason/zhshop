@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: Request) {
     try {
@@ -102,6 +103,17 @@ export async function PUT(request: Request) {
         const body = await request.json();
         const { id, ...updates } = body;
 
+        // [NEW] 1. Get old group info needed for points logic
+        let oldGroup = null;
+        if (updates.status === '已结束') {
+            const { data } = await supabase
+                .from('group_buys')
+                .select('status, price, title')
+                .eq('id', id)
+                .single();
+            oldGroup = data;
+        }
+
         const updateData: any = {};
         if (updates.title) updateData.title = updates.title;
         if (updates.description) updateData.description = updates.description;
@@ -118,6 +130,48 @@ export async function PUT(request: Request) {
             .eq('id', id);
 
         if (error) throw error;
+
+        // [NEW] Award points if status changed to '已结束'
+        if (updates.status === '已结束' && oldGroup && oldGroup.status !== '已结束') {
+            const groupPrice = oldGroup.price || 0;
+            const groupTitle = oldGroup.title || '拼团';
+
+            const adminClient = createAdminClient();
+
+            // Get participants
+            const { data: participants } = await adminClient
+                .from('group_participants')
+                .select('user_id, quantity')
+                .eq('group_id', id);
+
+            if (participants) {
+                for (const p of participants) {
+                    if (!p.user_id) continue;
+                    const points = Math.floor((p.quantity || 1) * groupPrice);
+
+                    if (points > 0) {
+                        // Fetch user points
+                        const { data: u } = await adminClient.from('users').select('points').eq('id', p.user_id).single();
+                        const newP = (u?.points || 0) + points;
+
+                        await adminClient.from('users').update({ points: newP }).eq('id', p.user_id);
+
+                        // Log
+                        const { error: logError } = await adminClient.from('point_logs').insert({
+                            user_id: p.user_id,
+                            amount: points,
+                            type: 'EARN',
+                            reason: `拼团结束奖励: ${groupTitle}`
+                        });
+
+                        if (logError) {
+                            console.error('Failed to insert group point log:', logError);
+                        }
+                    }
+                }
+            }
+        }
+
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error updating group:', error);

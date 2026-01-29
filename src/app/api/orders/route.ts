@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET() {
     try {
@@ -323,6 +324,40 @@ export async function PATCH(request: Request) {
             .eq('id', id);
 
         if (error) throw error;
+
+        if (error) throw error;
+
+        // [NEW] Award points if status changed to '已完成'
+        if (status === '已完成' && order && order.status !== '已完成') {
+            const pointsAwarded = Math.floor(order.cost || 0);
+            if (pointsAwarded > 0 && order.user_id) {
+                // Use Admin Client to bypass RLS
+                const adminClient = createAdminClient();
+
+                // 1. Get current points
+                const { data: userProfile } = await adminClient
+                    .from('users')
+                    .select('points')
+                    .eq('id', order.user_id)
+                    .single();
+
+                // 2. Update points
+                const newPoints = (userProfile?.points || 0) + pointsAwarded;
+                await adminClient.from('users').update({ points: newPoints }).eq('id', order.user_id);
+
+                // 3. Log
+                const { error: logError } = await adminClient.from('point_logs').insert({
+                    user_id: order.user_id,
+                    amount: pointsAwarded,
+                    type: 'EARN',
+                    reason: `订单完成奖励`
+                });
+
+                if (logError) {
+                    console.error('Failed to insert point log:', logError);
+                }
+            }
+        }
 
         // Restore stock if admin cancels a PRODUCT order using RPC
         if (status === '已取消' && order && order.item_type === 'PRODUCT' && order.item_id) {

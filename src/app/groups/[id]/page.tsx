@@ -41,6 +41,8 @@ export default function GroupDetailPage() {
             if (res.ok) {
                 const data = await res.json();
                 setGroup(data);
+            } else {
+                router.replace('/groups');
             }
         } catch (error) {
             console.error('Error fetching group:', error);
@@ -103,7 +105,7 @@ export default function GroupDetailPage() {
     if (!group) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
-                <p className="text-gray-500">拼团不存在</p>
+                <p className="text-gray-500">拼团不存在，正在跳转...</p>
             </div>
         );
     }
@@ -152,7 +154,7 @@ export default function GroupDetailPage() {
                     <div className="flex items-center justify-between p-6 bg-indigo-50 rounded-2xl mb-8">
                         <div>
                             <span className="text-sm text-gray-500 block">每人费用</span>
-                            <span className="text-3xl font-bold text-indigo-600">${group.price}</span>
+                            <span className="text-3xl font-bold text-indigo-600">¥{group.price}</span>
                         </div>
                     </div>
 

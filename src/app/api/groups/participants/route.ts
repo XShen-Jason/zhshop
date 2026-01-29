@@ -109,10 +109,17 @@ export async function PUT(request: Request) {
 
         // 4. Update group total count (if changed)
         if (diff !== 0) {
-            const { data: group } = await supabase.from('group_buys').select('current_count').eq('id', groupId).single();
+            const { data: group } = await supabase.from('group_buys').select('current_count, target_count').eq('id', groupId).single();
             if (group) {
+                const newTotal = (group.current_count || 0) + diff;
+
+                // Validate if exceeding target count
+                if (newTotal > (group.target_count || 0)) {
+                    return NextResponse.json({ error: '修改后的总份数超过拼团目标人数' }, { status: 400 });
+                }
+
                 await supabase.from('group_buys').update({
-                    current_count: (group.current_count || 0) + diff
+                    current_count: newTotal
                 }).eq('id', groupId);
             }
         }
