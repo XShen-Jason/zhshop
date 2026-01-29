@@ -285,6 +285,30 @@ export default function AdminPage() {
         handleAction('/api/tutorials', payload, editingTutorial.id, () => { setShowTutorialModal(false); setEditingTutorial(null); }, fetchTutorials);
     };
 
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+    const handleCategoryRename = async (oldName: string, newName: string) => {
+        if (!confirm(`确定将 "${oldName}" 重命名为 "${newName}" 吗？所有相关商品都将更新。`)) return;
+
+        try {
+            const res = await fetch('/api/categories', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ oldName, newName, type: 'products' })
+            });
+
+            if (res.ok) {
+                alert('分类重命名成功');
+                fetchProducts(true);
+            } else {
+                alert('重命名失败');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('网络错误');
+        }
+    };
+
     // Specific Feature Handlers
     const updateGroupStatus = async (id: string, status: string) => {
         if (!confirm('确定要更新拼团状态吗？')) return;
@@ -711,7 +735,7 @@ export default function AdminPage() {
             </div>
 
             {/* Category Filter */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
                 {productCategories.map(cat => (
                     <button
                         key={cat}
@@ -722,7 +746,42 @@ export default function AdminPage() {
                         {cat !== '全部' && <span className="ml-1 opacity-70">({products.filter(p => p.category === cat).length})</span>}
                     </button>
                 ))}
+
+                <button
+                    onClick={() => setShowCategoryModal(true)}
+                    className="ml-auto text-xs text-indigo-600 hover:text-indigo-800 underline flex items-center"
+                >
+                    <List size={14} className="mr-1" /> 管理分类
+                </button>
             </div>
+
+            {/* Category Management Modal */}
+            {showCategoryModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                        <h3 className="text-lg font-bold mb-4">管理商品分类</h3>
+                        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                            {productCategories.filter(c => c !== '全部').map(cat => (
+                                <div key={cat} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group">
+                                    <span className="text-sm font-medium">{cat}</span>
+                                    <button
+                                        onClick={() => {
+                                            const newName = prompt('请输入新的分类名称:', cat);
+                                            if (newName && newName !== cat) handleCategoryRename(cat, newName);
+                                        }}
+                                        className="text-gray-400 hover:text-indigo-600 p-1"
+                                    >
+                                        <Edit size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-6 flex justify-end">
+                            <button onClick={() => setShowCategoryModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">关闭</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Products Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
