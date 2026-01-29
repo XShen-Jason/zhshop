@@ -5,7 +5,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-    Users, ShoppingCart, Activity, AlertCircle, Check, X, Box, FileText, Plus, Edit, Trash2, Gift, Users2, Play, Eye, Repeat, List, Grid, Lock, Unlock
+    Users, ShoppingCart, Activity, AlertCircle, Check, X, Box, FileText, Plus, Edit, Trash2, Gift, Users2, Play, Eye, Repeat, List, Grid, Lock, Unlock, Archive, Copy
 } from 'lucide-react';
 import { Order, Product, Tutorial } from '@/types';
 import { createClient } from '@/lib/supabase/client';
@@ -50,6 +50,7 @@ interface Participant {
     isWinner?: boolean;
     joinedAt?: string;
     quantity: number;
+    users?: { name: string; email?: string } | null;
 }
 
 export default function AdminPage() {
@@ -285,6 +286,25 @@ export default function AdminPage() {
     };
 
     // Specific Feature Handlers
+    const updateGroupStatus = async (id: string, status: string) => {
+        if (!confirm('确定要更新拼团状态吗？')) return;
+
+        // Optimistic update
+        setGroups(prev => prev.map(g => g.id === id ? { ...g, status } : g));
+
+        try {
+            await fetch('/api/groups', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, status })
+            });
+            fetchGroups(true);
+        } catch (e) {
+            console.error(e);
+            alert('更新失败');
+        }
+    };
+
     const executeDraw = async (id: string) => {
         if (!confirm('确定现在开奖吗？系统将自动随机抽取中奖者。')) return;
         try {
@@ -313,31 +333,14 @@ export default function AdminPage() {
 
         try {
             if (type === 'GROUP') {
-                const { data, error } = await supabase
-                    .from('group_participants')
-                    // Select contact_info directly from this row, plus users join for fallback
-                    .select('user_id, joined_at, quantity, contact_info, users(email, name)')
-                    .eq('group_id', id);
-
-                if (error) throw error;
-
-                const aggregated = data.reduce((acc: any, d: any) => {
-                    const oderId = d.user_id || 'anonymous'; // handle null user_id
-                    if (!acc[oderId]) {
-                        acc[oderId] = {
-                            id: oderId,
-                            userId: oderId,
-                            // Prioritize participant-row contact_info, fallback to user email
-                            contact: d.contact_info || d.users?.email || '-',
-                            joinedAt: d.joined_at,
-                            quantity: 0
-                        };
-                    }
-                    acc[oderId].quantity += (d.quantity || 1);
-                    return acc;
-                }, {});
-
-                setParticipantsList(Object.values(aggregated));
+                const res = await fetch(`/api/groups/participants?groupId=${id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setParticipantsList(data);
+                } else {
+                    console.error('Failed to fetch participants');
+                    setParticipantsList([]);
+                }
             } else {
                 const { data, error } = await supabase
                     .from('lottery_entries')
@@ -363,6 +366,45 @@ export default function AdminPage() {
         } finally {
             setParticipantsLoading(false);
         }
+    };
+
+    const handleParticipantUpdate = async (userId: string, currentQty: number) => {
+        if (!currentViewId) return;
+        const newQtyStr = prompt('请输入新的数量:', currentQty.toString());
+        if (newQtyStr === null) return;
+        const newQty = parseInt(newQtyStr);
+        if (isNaN(newQty) || newQty < 1) return alert('请输入有效数量');
+
+        try {
+            const res = await fetch('/api/groups/participants', {
+                method: 'PUT',
+                body: JSON.stringify({ groupId: currentViewId, userId, quantity: newQty })
+            });
+            if (res.ok) {
+                alert('修改成功');
+                viewParticipants('GROUP', currentViewId);
+                fetchGroups(true);
+            } else {
+                alert('修改失败');
+            }
+        } catch (e) { console.error(e); alert('网络错误'); }
+    };
+
+    const handleParticipantDelete = async (userId: string) => {
+        if (!currentViewId || !confirm('确定要移除该成员吗？')) return;
+        try {
+            const res = await fetch('/api/groups/participants', {
+                method: 'DELETE',
+                body: JSON.stringify({ groupId: currentViewId, userId })
+            });
+            if (res.ok) {
+                alert('移除成功');
+                viewParticipants('GROUP', currentViewId);
+                fetchGroups(true);
+            } else {
+                alert('移除失败');
+            }
+        } catch (e) { console.error(e); alert('网络错误'); }
     };
 
     // --- Renderers ---
@@ -393,53 +435,119 @@ export default function AdminPage() {
         const filteredOrders = orderFilter === '全部' ? orders : orders.filter(o => o.status === orderFilter);
 
         return (
-            <div className="space-y-4">
+            <div className="space-y-6">
                 {/* Status Filter Tabs */}
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap bg-white p-2 rounded-lg shadow-sm w-fit">
                     {orderStatuses.map(status => (
                         <button
                             key={status}
                             onClick={() => setOrderFilter(status)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${orderFilter === status ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${orderFilter === status ? 'bg-indigo-600 text-white shadow' : 'text-gray-600 hover:bg-gray-100'}`}
                         >
                             {status}
-                            <span className="ml-1 opacity-70">
-                                ({status === '全部' ? orders.length : orders.filter(o => o.status === status).length})
+                            <span className="ml-2 text-xs opacity-80 bg-white/20 px-1.5 py-0.5 rounded-full">
+                                {status === '全部' ? orders.length : orders.filter(o => o.status === status).length}
                             </span>
                         </button>
                     ))}
                 </div>
 
-                <div className="bg-white rounded shadow text-sm">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 uppercase font-medium text-gray-700"><tr><th className="p-3">商品</th><th className="p-3">数量</th><th className="p-3">金额</th><th className="p-3">联系</th><th className="p-3">状态</th><th className="p-3">操作</th></tr></thead>
-                        <tbody className="divide-y">
-                            {filteredOrders.length === 0 ? (
-                                <tr><td colSpan={6} className="p-4 text-center text-gray-400">暂无订单</td></tr>
-                            ) : (
-                                filteredOrders.map(o => (
-                                    <tr key={o.id} className="hover:bg-gray-50">
-                                        <td className="p-3">{o.itemName} <span className="text-xs text-gray-400 block">{o.itemType}</span></td>
-                                        <td className="p-3"><span className="font-bold text-indigo-600">×{o.quantity || 1}</span></td>
-                                        <td className="p-3"><span className="font-bold">¥{o.cost || 0}</span></td>
-                                        <td className="p-3">{o.contactDetails}</td>
-                                        <td className="p-3"><span className={`px-2 py-0.5 rounded text-xs ${o.status === '已完成' ? 'bg-green-100 text-green-800' : o.status === '待联系' ? 'bg-amber-100 text-amber-800' : o.status === '已取消' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>{o.status}</span></td>
-                                        <td className="p-3 flex gap-2">
-                                            <button onClick={() => updateOrderStatus(o.id, '已联系')} className="text-blue-600 hover:bg-blue-50 p-1 rounded" title="已联系"><Activity size={16} /></button>
-                                            <button onClick={() => updateOrderStatus(o.id, '已完成')} className="text-green-600 hover:bg-green-50 p-1 rounded" title="已完成"><Check size={16} /></button>
-                                            <button onClick={() => updateOrderStatus(o.id, '已取消')} className="text-red-600 hover:bg-red-50 p-1 rounded" title="已取消"><X size={16} /></button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                <div className="grid gap-4">
+                    {filteredOrders.length === 0 ? (
+                        <div className="text-center py-12 bg-white rounded-xl border border-dashed text-gray-400">
+                            <ShoppingCart size={48} className="mx-auto mb-2 opacity-20" />
+                            暂无订单
+                        </div>
+                    ) : (
+                        filteredOrders.map(o => (
+                            <div key={o.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col md:flex-row justify-between gap-6">
+                                <div className="flex-1 space-y-3">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className={`text-xs px-2 py-0.5 rounded border ${o.itemType === 'PRODUCT' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-purple-50 border-purple-100 text-purple-600'}`}>
+                                                    {o.itemType}
+                                                </span>
+                                                <span className="text-xs text-gray-400">{formatBeijing(o.createdAt, 'yyyy-MM-dd HH:mm')}</span>
+                                            </div>
+                                            <h4 className="font-bold text-lg text-gray-900">{o.itemName}</h4>
+                                        </div>
+                                        <div className={`px-3 py-1 rounded-full text-sm font-bold ${o.status === '已完成' ? 'bg-green-100 text-green-700' :
+                                            o.status === '已取消' ? 'bg-red-100 text-red-700' :
+                                                o.status === '已联系' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-amber-100 text-amber-700 animate-pulse'
+                                            }`}>
+                                            {o.status}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                                        <div>
+                                            <span className="block text-xs text-gray-400 mb-1">数量</span>
+                                            <span className="font-bold">x {o.quantity || 1}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-xs text-gray-400 mb-1">总价</span>
+                                            <span className="font-bold text-indigo-600">¥{o.cost || 0}</span>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <span className="block text-xs text-gray-400 mb-1">联系方式</span>
+                                            <span className="font-mono">{o.contactDetails || '-'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex md:flex-col justify-end gap-2 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 min-w-[120px]">
+                                    {/* Action Buttons - Only show if not terminal state */}
+                                    {o.status !== '已完成' && o.status !== '已取消' && (
+                                        <>
+                                            {o.status === '待联系' && (
+                                                <button
+                                                    onClick={() => updateOrderStatus(o.id, '已联系')}
+                                                    className="w-full py-2 px-3 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100 flex items-center justify-center transition-colors"
+                                                >
+                                                    <Activity size={16} className="mr-2" /> 标记已联系
+                                                </button>
+                                            )}
+
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm('确认将订单标记为已完成？此操作不可撤销。')) {
+                                                        updateOrderStatus(o.id, '已完成');
+                                                    }
+                                                }}
+                                                className="w-full py-2 px-3 text-sm bg-green-50 text-green-700 rounded hover:bg-green-100 flex items-center justify-center transition-colors"
+                                            >
+                                                <Check size={16} className="mr-2" /> 完成订单
+                                            </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm('确认取消此订单？此操作不可撤销。')) {
+                                                        updateOrderStatus(o.id, '已取消');
+                                                    }
+                                                }}
+                                                className="w-full py-2 px-3 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100 flex items-center justify-center transition-colors"
+                                            >
+                                                <X size={16} className="mr-2" /> 取消订单
+                                            </button>
+                                        </>
+                                    )}
+                                    {(o.status === '已完成' || o.status === '已取消') && (
+                                        <div className="text-center text-gray-400 text-sm py-2">
+                                            订单归档
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         );
     };
 
-    const renderGroupSection = (title: string, items: GroupBuy[], icon: React.ReactNode) => (
+    const renderGroupSection = (title: string, items: GroupBuy[], icon: React.ReactNode, type: 'ACTIVE' | 'LOCKED' | 'ENDED') => (
         <div className="space-y-3">
             <h4 className="font-bold text-gray-600 flex items-center">{icon} <span className="ml-2">{title}</span> <span className="ml-2 text-xs bg-gray-200 px-2 rounded-full">{items.length}</span></h4>
             {items.length === 0 ? (
@@ -450,7 +558,10 @@ export default function AdminPage() {
                         <div key={g.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all group">
                             <div className="flex justify-between items-start mb-2">
                                 <h5 className="font-bold text-gray-800 line-clamp-1" title={g.title}>{g.title}</h5>
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${g.status === '进行中' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${g.status === '进行中' ? 'bg-green-100 text-green-800' :
+                                    g.status === '已锁单' ? 'bg-amber-100 text-amber-800' :
+                                        'bg-gray-100 text-gray-600'
+                                    }`}>
                                     {g.status}
                                 </span>
                             </div>
@@ -466,16 +577,31 @@ export default function AdminPage() {
                                 )}
                             </div>
                             <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4">
-                                <div className="bg-indigo-600 h-1.5 rounded-full" style={{ width: `${Math.min(100, (g.currentCount / g.targetCount) * 100)}%` }}></div>
+                                <div className={`h-1.5 rounded-full ${g.currentCount >= g.targetCount ? 'bg-green-500' : 'bg-indigo-600'}`} style={{ width: `${Math.min(100, (g.currentCount / g.targetCount) * 100)}%` }}></div>
                             </div>
 
                             <div className="flex border-t pt-3 gap-2">
                                 <button onClick={() => viewParticipants('GROUP', g.id)} className="flex-1 py-1.5 text-xs bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 flex items-center justify-center">
                                     <Users size={14} className="mr-1" /> 名单
                                 </button>
-                                <button onClick={() => { setEditingGroup({ ...g, features: g.features.join('\\n') } as any); setShowGroupModal(true) }} className="flex-1 py-1.5 text-xs bg-gray-50 text-gray-700 rounded hover:bg-gray-100 flex items-center justify-center">
-                                    <Edit size={14} className="mr-1" /> 编辑
-                                </button>
+
+                                {type !== 'ENDED' && (
+                                    <button onClick={() => { setEditingGroup({ ...g, features: g.features.join('\\n') } as any); setShowGroupModal(true) }} className="flex-1 py-1.5 text-xs bg-gray-50 text-gray-700 rounded hover:bg-gray-100 flex items-center justify-center">
+                                        <Edit size={14} className="mr-1" /> 编辑
+                                    </button>
+                                )}
+
+                                {/* Quick Actions */}
+                                {type === 'LOCKED' && (
+                                    <button
+                                        onClick={() => updateGroupStatus(g.id, '已结束')}
+                                        className="flex-1 py-1.5 text-xs bg-green-50 text-green-700 rounded hover:bg-green-100 flex items-center justify-center font-bold"
+                                        title="结束拼团"
+                                    >
+                                        <Check size={14} className="mr-1" /> 结束
+                                    </button>
+                                )}
+
                                 <button onClick={() => handleDelete('/api/groups', g.id, fetchGroups)} className="w-8 flex items-center justify-center text-red-400 hover:text-red-600 rounded hover:bg-red-50">
                                     <Trash2 size={14} />
                                 </button>
@@ -489,7 +615,8 @@ export default function AdminPage() {
 
     const renderGroups = () => {
         const activeGroups = groups.filter(g => g.status === '进行中');
-        const closedGroups = groups.filter(g => g.status !== '进行中');
+        const lockedGroups = groups.filter(g => g.status === '已锁单');
+        const endedGroups = groups.filter(g => g.status === '已结束');
 
         return (
             <div className="space-y-8">
@@ -500,8 +627,9 @@ export default function AdminPage() {
                     </button>
                 </div>
 
-                {renderGroupSection('进行中', activeGroups, <Unlock size={18} className="text-green-600" />)}
-                {renderGroupSection('已锁单/结束', closedGroups, <Lock size={18} className="text-gray-500" />)}
+                {renderGroupSection('进行中', activeGroups, <Unlock size={18} className="text-green-600" />, 'ACTIVE')}
+                {renderGroupSection('已锁单 (需处理)', lockedGroups, <Lock size={18} className="text-amber-600" />, 'LOCKED')}
+                {renderGroupSection('历史记录', endedGroups, <Archive size={18} className="text-gray-400" />, 'ENDED')}
             </div>
         );
     };
@@ -790,9 +918,17 @@ export default function AdminPage() {
             {/* Participants View Modal */}
             {showParticipantsModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold">查看参与者名单</h3>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-bold">查看参与者名单</h3>
+                                {currentViewType === 'GROUP' && (
+                                    <span className={`text-xs px-2 py-0.5 rounded ${groups.find(g => g.id === currentViewId)?.status === '已结束' ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-600'
+                                        }`}>
+                                        {groups.find(g => g.id === currentViewId)?.status === '已结束' ? '仅查看' : '可管理'}
+                                    </span>
+                                )}
+                            </div>
                             <button onClick={() => setShowParticipantsModal(false)}><X size={20} /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto">
@@ -801,37 +937,61 @@ export default function AdminPage() {
                             ) : participantsList.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500">暂无参与者</div>
                             ) : (
-                                <table className="w-full text-left text-sm">
-                                    <thead className="bg-gray-50">
+                                <table className="w-full text-left text-sm whitespace-nowrap">
+                                    <thead className="bg-gray-50 sticky top-0">
                                         <tr>
                                             {currentViewType === 'LOTTERY' && <th className="p-3">用户名</th>}
+                                            {currentViewType === 'GROUP' && <th className="p-3">用户昵称</th>}
                                             <th className="p-3">联系方式</th>
                                             <th className="p-3">参与时间</th>
                                             {currentViewType === 'LOTTERY' && <th className="p-3">中奖状态</th>}
                                             {currentViewType === 'GROUP' && <th className="p-3">用户ID</th>}
                                             {currentViewType === 'GROUP' && <th className="p-3">数量</th>}
+                                            {currentViewType === 'GROUP' && groups.find(g => g.id === currentViewId)?.status !== '已结束' && <th className="p-3">操作</th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
                                         {participantsList.map(p => (
-                                            <tr key={p.id} className={p.isWinner ? 'bg-green-50' : ''}>
+                                            <tr key={p.id} className={p.isWinner ? 'bg-green-50' : 'hover:bg-gray-50'}>
                                                 {currentViewType === 'LOTTERY' && (
                                                     <td className="p-3 font-medium">{p.name || '未知用户'}</td>
                                                 )}
+                                                {currentViewType === 'GROUP' && (
+                                                    <td className="p-3 font-medium">{p.users?.name || '匿名'}</td>
+                                                )}
                                                 <td className="p-3">
-                                                    <span className="font-bold">{p.contact || '-'}</span>
+                                                    <span className="font-mono">{p.contact || '-'}</span>
                                                 </td>
-                                                <td className="p-3">{new Date(p.joinedAt || '').toLocaleString()}</td>
+                                                <td className="p-3 text-gray-600">{new Date(p.joinedAt || '').toLocaleString()}</td>
                                                 {currentViewType === 'LOTTERY' && (
                                                     <td className="p-3">
                                                         {p.isWinner ? <span className="text-green-600 font-bold flex items-center"><Gift size={14} className="mr-1" />中奖</span> : <span className="text-gray-400">未中奖</span>}
                                                     </td>
                                                 )}
                                                 {currentViewType === 'GROUP' && (
-                                                    <td className="p-3 font-mono text-xs">{p.userId.substring(0, 8)}...</td>
+                                                    <td className="p-3">
+                                                        <span
+                                                            className="font-mono text-xs text-gray-500 cursor-pointer hover:text-indigo-600 flex items-center gap-1 group/copy"
+                                                            onClick={() => { navigator.clipboard.writeText(p.userId); alert('用户ID已复制'); }}
+                                                            title="点击复制完整ID"
+                                                        >
+                                                            {p.userId.substring(0, 8)}...
+                                                            <Copy size={10} className="opacity-0 group-hover/copy:opacity-100" />
+                                                        </span>
+                                                    </td>
                                                 )}
                                                 {currentViewType === 'GROUP' && (
-                                                    <td className="p-3">{p.quantity || 1}</td>
+                                                    <td className="p-3 font-bold">{p.quantity || 1}</td>
+                                                )}
+                                                {currentViewType === 'GROUP' && groups.find(g => g.id === currentViewId)?.status !== '已结束' && (
+                                                    <td className="p-3 flex gap-2">
+                                                        <button onClick={() => handleParticipantUpdate(p.userId, p.quantity || 1)} className="p-1 text-blue-600 hover:bg-blue-50 rounded" title="修改数量">
+                                                            <Edit size={14} />
+                                                        </button>
+                                                        <button onClick={() => handleParticipantDelete(p.userId)} className="p-1 text-red-600 hover:bg-red-50 rounded" title="移除成员">
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </td>
                                                 )}
                                             </tr>
                                         ))}
