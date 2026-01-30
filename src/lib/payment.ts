@@ -10,7 +10,15 @@ const SECRET = process.env.PAYMENT_FM_SECRET || '';
 // In production, this should be the actual public domain. 
 // For local development, this won't work for callbacks unless using a tunnel (e.g., ngrok).
 // The user hasn't specified a domain, so we'll construct it from the request or a base URL env.
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+// We prefer VERCEL_URL to ensure we hit the specific deployment (preview or prod) correctly.
+const getBaseUrl = () => {
+    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+    if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+    if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
+    return 'http://localhost:3000';
+};
+
+const BASE_URL = getBaseUrl();
 const NOTIFY_URL = `${BASE_URL}/api/payment/notify`;
 const RETURN_URL = `${BASE_URL}/user`; // Redirect to user center after payment
 
