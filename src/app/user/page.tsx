@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User as UserIcon, Gift, ShoppingBag, Clock, ChevronRight, LogOut, Award, Calendar, Coins, Trophy, ArrowRight, TrendingUp, TrendingDown, Users, Edit2, X } from 'lucide-react';
+import { User as UserIcon, Gift, ShoppingBag, Clock, ChevronRight, LogOut, Award, Calendar, Coins, Trophy, ArrowRight, TrendingUp, TrendingDown, Users, Edit2, X, RefreshCcw } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ModifyParticipationModal } from '@/components/ModifyParticipationModal';
@@ -130,6 +130,29 @@ export default function UserPage() {
         await supabase.auth.signOut();
         router.push('/');
         router.refresh();
+    };
+
+    const checkPayment = async (orderId: string) => {
+        if (!confirm('是否向支付平台查询该订单的最新状态？')) return;
+        setActionLoading(true);
+        try {
+            const res = await fetch('/api/payment/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId })
+            });
+            const data = await res.json();
+            if (data.paid) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert(data.message || data.error || '未查询到支付成功记录');
+            }
+        } catch (e) {
+            alert('查询失败');
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     const pendingCount = orders.filter(o => o.status === '待联系').length;
@@ -296,6 +319,18 @@ export default function UserPage() {
                                             {/* Show modify/cancel buttons only for PRODUCT orders with 待联系 status */}
                                             {order.itemType === 'PRODUCT' && order.status === '待联系' && (
                                                 <>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            checkPayment(order.id);
+                                                        }}
+                                                        disabled={actionLoading}
+                                                        className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded hover:bg-green-100 flex items-center"
+                                                        title="如果您已支付但状态未更新，请点击此按钮"
+                                                    >
+                                                        <RefreshCcw size={14} className={`mr-1 ${actionLoading ? 'animate-spin' : ''}`} /> 支付状态
+                                                    </button>
                                                     <button
                                                         onClick={(e) => {
                                                             e.preventDefault();

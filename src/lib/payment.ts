@@ -133,4 +133,43 @@ export class PaymentService {
 
         return calculatedSign === sign;
     }
+
+    /**
+     * Query order status from Payment FM
+     */
+    static async queryOrder(orderNo: string) {
+        if (!SECRET) return null;
+
+        const signStr = MERCHANT_NUM + orderNo + SECRET;
+        const sign = this.md5(signStr);
+
+        const params = new URLSearchParams({
+            merchantNum: MERCHANT_NUM,
+            orderNo: orderNo,
+            sign: sign
+        });
+
+        try {
+            const queryUrl = PAYMENT_FM_API_URL.replace('/startOrder', '/queryOutOrder');
+            const res = await fetch(`${queryUrl}?${params.toString()}`, {
+                method: 'POST'
+            });
+
+            const data = await res.json();
+            console.log('[DEBUG] Payment query result:', data);
+
+            if (data.success && data.data) {
+                return {
+                    success: true,
+                    status: data.data.orderState, // '4' is success
+                    statusDesc: data.data.orderStateDesc,
+                    payTime: data.data.payTime
+                };
+            }
+            return { success: false, msg: data.msg || 'Query failed' };
+        } catch (error) {
+            console.error('Payment query error:', error);
+            return { success: false, msg: 'Network error' };
+        }
+    }
 }
