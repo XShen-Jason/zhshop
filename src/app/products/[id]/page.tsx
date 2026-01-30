@@ -65,6 +65,12 @@ export default function ProductDetailPage() {
             });
 
             if (res.ok) {
+                const data = await res.json();
+                if (data.payUrl) {
+                    // Redirect to payment page
+                    window.location.href = data.payUrl;
+                    return; // Stop execution to prevent showing "Submitted" state immediately
+                }
                 setSubmitted(true);
             } else {
                 const errorData = await res.json();
