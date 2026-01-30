@@ -69,7 +69,7 @@ export default function UserPage() {
     const [groups, setGroups] = useState<GroupEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'orders' | 'lotteries' | 'groups'>('orders');
-    const [activeTab, setActiveTab] = useState<'orders' | 'lotteries' | 'groups'>('orders');
+    const [actionLoading, setActionLoading] = useState(false);
     const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
     const [editingGroup, setEditingGroup] = useState<GroupEntry | null>(null);
     const [editingContact, setEditingContact] = useState<{
@@ -403,7 +403,7 @@ export default function UserPage() {
                                                         onClick={async (e) => {
                                                             e.stopPropagation();
                                                             if (!confirm('确定取消此订单吗？')) return;
-                                                            setActionLoading(true);
+                                                            setLoadingOrderId(order.id);
                                                             try {
                                                                 const res = await fetch('/api/orders', {
                                                                     method: 'DELETE',
@@ -418,7 +418,7 @@ export default function UserPage() {
                                                                     alert(err.error || '取消失败');
                                                                 }
                                                             } catch { alert('网络错误'); }
-                                                            setActionLoading(false);
+                                                            setLoadingOrderId(null);
                                                         }}
                                                         disabled={loadingOrderId === order.id}
                                                         className="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 flex items-center"
