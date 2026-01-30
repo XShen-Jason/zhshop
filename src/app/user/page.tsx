@@ -13,6 +13,11 @@ import { createClient } from '@/lib/supabase/client';
 import { Order } from '@/types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
+// Extend Order type locally if not updated in types file yet
+interface OrderWithPay extends Order {
+    pay_url?: string;
+}
+
 interface UserProfile {
     id: string;
     name: string;
@@ -109,7 +114,23 @@ export default function UserPage() {
 
             // Set all data from single response
             setProfile(data.profile);
-            setOrders(data.orders || []);
+            setProfile(data.profile);
+
+            // Check for expired pending orders (e.g. 15 mins)
+            const now = new Date().getTime();
+            const adjustedOrders = (data.orders || []).map((o: any) => {
+                // If status is '待支付' and older than 15 mins, show as '已取消'
+                if (o.status === '待支付') {
+                    const created = new Date(o.createdAt || o.created_at).getTime();
+                    // 15 minutes = 15 * 60 * 1000 = 900000 ms
+                    if (now - created > 900000) {
+                        return { ...o, status: '已取消' };
+                    }
+                }
+                return o;
+            });
+
+            setOrders(adjustedOrders);
             setLotteries(data.lotteries || []);
             setGroups(data.groups || []);
         } catch (error) {
@@ -155,7 +176,7 @@ export default function UserPage() {
         }
     };
 
-    const pendingCount = orders.filter(o => o.status === '待联系').length;
+    const pendingCount = orders.filter(o => o.status === '待联系' || o.status === '待支付').length;
     const wonCount = lotteries.filter(l => l.isWinner).length;
 
     if (loading) {
@@ -316,21 +337,51 @@ export default function UserPage() {
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
+                                            {/* Show Pay button for Pending Payment orders */}
+                                            {order.status === '待支付' && (order as OrderWithPay).pay_url && (
+                                                <a
+                                                    href={(order as OrderWithPay).pay_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-4 py-2 text-sm font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center animate-pulse"
+                                                >
+                                                    去支付 <ArrowRight size={14} className="ml-1" />
+                                                </a>
+                                            )}
+
                                             {/* Show modify/cancel buttons only for PRODUCT orders with 待联系 status */}
-                                            {order.itemType === 'PRODUCT' && order.status === '待联系' && (
+                                            {order.itemType === 'PRODUCT' && (order.status === '待联系' || order.status === '待支付') && (
                                                 <>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            checkPayment(order.id);
-                                                        }}
-                                                        disabled={actionLoading}
-                                                        className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded hover:bg-green-100 flex items-center"
-                                                        title="如果您已支付但状态未更新，请点击此按钮"
-                                                    >
-                                                        <RefreshCcw size={14} className={`mr-1 ${actionLoading ? 'animate-spin' : ''}`} /> 支付状态
-                                                    </button>
+                                                    {(order.status === '待支付') && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                checkPayment(order.id);
+                                                            }}
+                                                            disabled={actionLoading}
+                                                            className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded hover:bg-green-100 flex items-center"
+                                                            title="如果您已支付但状态未更新，请点击此按钮"
+                                                        >
+                                                            <RefreshCcw size={14} className={`mr-1 ${actionLoading ? 'animate-spin' : ''}`} /> 刷新状态
+                                                        </button>
+                                                    )}
+
+                                                    {order.status === '待联系' && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                checkPayment(order.id);
+                                                            }}
+                                                            disabled={actionLoading}
+                                                            className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded hover:bg-green-100 flex items-center"
+                                                            title="如果您已支付但状态未更新，请点击此按钮"
+                                                        >
+                                                            <RefreshCcw size={14} className={`mr-1 ${actionLoading ? 'animate-spin' : ''}`} /> 支付状态
+                                                        </button>
+                                                    )}
+
                                                     <button
                                                         onClick={(e) => {
                                                             e.preventDefault();
@@ -371,7 +422,7 @@ export default function UserPage() {
                                                 </>
                                             )}
                                             {/* Show contact edit button for non-product or non-pending orders */}
-                                            {(order.itemType !== 'PRODUCT' || order.status !== '待联系') && (
+                                            {(order.itemType !== 'PRODUCT' || (order.status !== '待联系' && order.status !== '待支付')) && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.preventDefault();

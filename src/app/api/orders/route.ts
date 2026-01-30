@@ -53,7 +53,8 @@ export async function GET() {
             notes: o.notes,
             cost: o.cost,
             currency: o.currency,
-            quantity: o.quantity || 1
+            quantity: o.quantity || 1,
+            pay_url: o.pay_url
         }));
 
         return NextResponse.json(orders);
@@ -334,6 +335,12 @@ export async function POST(request: Request) {
 
                 if (paymentResult && paymentResult.success) {
                     payUrl = paymentResult.payUrl;
+                    // Update order with payUrl and set status to '待支付' (Pending Payment)
+                    await supabase.from('orders').update({
+                        status: '待支付',
+                        pay_url: payUrl,
+                        notes: `[Payment] 支付链接已生成`
+                    }).eq('id', data.id);
                 } else {
                     console.error('[DEBUG] Payment creation failed:', paymentResult);
                     paymentError = paymentResult?.msg || 'Payment failed';

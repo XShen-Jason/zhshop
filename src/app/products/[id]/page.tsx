@@ -79,7 +79,7 @@ export default function ProductDetailPage() {
             } else {
                 if (res.status === 401) {
                     alert('请先登录再进行购买');
-                    router.push('/auth');
+                    router.push('/auth/login');
                     return;
                 }
                 const errorData = await res.json();
