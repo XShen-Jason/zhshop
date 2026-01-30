@@ -42,8 +42,8 @@ export class PaymentService {
             return null;
         }
 
-        // FORCE AMOUNT TO 0.01 FOR TESTING AS REQUESTED
-        const payAmount = '0.01';
+        // FORCE AMOUNT TO 1.00 FOR TESTING (API requires min 1.00 for free-sign)
+        const payAmount = '1.00';
         // const payAmount = amount.toFixed(2); // Original logic
 
         const payType = 'wechat'; // Changed to 'wechat' as user only has WeChat configured
