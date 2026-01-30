@@ -77,6 +77,11 @@ export default function ProductDetailPage() {
                 }
                 setSubmitted(true);
             } else {
+                if (res.status === 401) {
+                    alert('请先登录再进行购买');
+                    router.push('/auth');
+                    return;
+                }
                 const errorData = await res.json();
                 alert(errorData.error || '订单提交失败');
                 // Update stock display if available
@@ -226,7 +231,9 @@ export default function ProductDetailPage() {
                                 disabled={!product.inStock || (product.stock !== undefined && product.stock <= 0) || submitting}
                                 className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all transform active:scale-95 flex items-center justify-center ${product.inStock && (product.stock === undefined || product.stock > 0) && !submitting ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' : 'bg-gray-400 cursor-not-allowed'}`}
                             >
-                                {submitting ? '提交中...' : (product.inStock && (product.stock === undefined || product.stock > 0)) ? '提交订单' : '暂时缺货'}
+                                {submitting ? '提交中...' :
+                                    (!product.inStock || (product.stock !== undefined && product.stock <= 0)) ? '暂时缺货' :
+                                        '提交订单'}
                             </button>
                         </form>
                     </div>
