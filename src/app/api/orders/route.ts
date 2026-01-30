@@ -71,6 +71,10 @@ export async function POST(request: Request) {
         // Get current user
         const { data: { user } } = await supabase.auth.getUser();
 
+        if (!user) {
+            return NextResponse.json({ error: '请先登录' }, { status: 401 });
+        }
+
         // Validate stock for PRODUCT orders before creating order
         if (body.itemType === 'PRODUCT' && body.itemId) {
             const qty = body.quantity || 1;
