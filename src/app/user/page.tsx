@@ -69,7 +69,8 @@ export default function UserPage() {
     const [groups, setGroups] = useState<GroupEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'orders' | 'lotteries' | 'groups'>('orders');
-    const [actionLoading, setActionLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<'orders' | 'lotteries' | 'groups'>('orders');
+    const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
     const [editingGroup, setEditingGroup] = useState<GroupEntry | null>(null);
     const [editingContact, setEditingContact] = useState<{
         type: 'order' | 'lottery' | 'group';
@@ -155,7 +156,7 @@ export default function UserPage() {
 
     const checkPayment = async (orderId: string) => {
         if (!confirm('是否向支付平台查询该订单的最新状态？')) return;
-        setActionLoading(true);
+        setLoadingOrderId(orderId);
         try {
             const res = await fetch('/api/payment/check', {
                 method: 'POST',
@@ -163,16 +164,33 @@ export default function UserPage() {
                 body: JSON.stringify({ orderId })
             });
             const data = await res.json();
-            if (data.paid) {
+            if (data.paid && data.updated) {
                 alert(data.message);
-                window.location.reload();
+                // Update local state without reload
+                setOrders(prev => prev.map(o => {
+                    if (o.id === orderId) {
+                        // If it was a PRODUCT, status becomes '待联系'
+                        // If logic changed in API, we should ideally fetch the new status, 
+                        // but here we can infer based on our API logic:
+                        // Product -> '待联系', Others (digital auto) -> 'Completed'
+                        let newStatus = 'Completed';
+                        if (o.itemType === 'PRODUCT') newStatus = '待联系';
+
+                        return { ...o, status: newStatus };
+                    }
+                    return o;
+                }));
+            } else if (data.paid && !data.updated) {
+                alert(data.message);
+                // No status change needed presumably, or already updated
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: o.itemType === 'PRODUCT' ? '待联系' : 'Completed' } : o));
             } else {
                 alert(data.message || data.error || '未查询到支付成功记录');
             }
         } catch (e) {
             alert('查询失败');
         } finally {
-            setActionLoading(false);
+            setLoadingOrderId(null);
         }
     };
 
@@ -359,11 +377,11 @@ export default function UserPage() {
                                                                 e.stopPropagation();
                                                                 checkPayment(order.id);
                                                             }}
-                                                            disabled={actionLoading}
+                                                            disabled={loadingOrderId === order.id}
                                                             className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded hover:bg-green-100 flex items-center"
                                                             title="如果您已支付但状态未更新，请点击此按钮"
                                                         >
-                                                            <RefreshCcw size={14} className={`mr-1 ${actionLoading ? 'animate-spin' : ''}`} /> 刷新状态
+                                                            <RefreshCcw size={14} className={`mr-1 ${loadingOrderId === order.id ? 'animate-spin' : ''}`} /> 刷新状态
                                                         </button>
                                                     )}
 
@@ -373,11 +391,11 @@ export default function UserPage() {
                                                                 e.stopPropagation();
                                                                 checkPayment(order.id);
                                                             }}
-                                                            disabled={actionLoading}
+                                                            disabled={loadingOrderId === order.id}
                                                             className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded hover:bg-green-100 flex items-center"
                                                             title="如果您已支付但状态未更新，请点击此按钮"
                                                         >
-                                                            <RefreshCcw size={14} className={`mr-1 ${actionLoading ? 'animate-spin' : ''}`} /> 支付状态
+                                                            <RefreshCcw size={14} className={`mr-1 ${loadingOrderId === order.id ? 'animate-spin' : ''}`} /> 支付状态
                                                         </button>
                                                     )}
 
@@ -402,7 +420,7 @@ export default function UserPage() {
                                                             } catch { alert('网络错误'); }
                                                             setActionLoading(false);
                                                         }}
-                                                        disabled={actionLoading}
+                                                        disabled={loadingOrderId === order.id}
                                                         className="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 flex items-center"
                                                     >
                                                         <X size={14} className="mr-1" /> 取消

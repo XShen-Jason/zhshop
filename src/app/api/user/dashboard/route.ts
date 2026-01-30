@@ -104,7 +104,8 @@ export async function GET() {
             notes: o.notes,
             cost: o.cost,
             currency: o.currency,
-            quantity: o.quantity || 1
+            quantity: o.quantity || 1,
+            pay_url: o.pay_url
         }));
 
         // Transform lottery entries
