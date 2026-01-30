@@ -38,11 +38,11 @@ export async function POST(request: Request) {
         if (queryResult && queryResult.success) {
             if (queryResult.status === '4') { // 4 = Paid Success
                 // Update order to completed if not already
-                if (order.status !== 'Completed') {
+                if (order.status !== '已完成') {
                     const { error: updateError } = await supabase
                         .from('orders')
                         .update({
-                            status: 'Completed',
+                            status: '已完成',
                             updated_at: new Date().toISOString()
                         })
                         .eq('id', orderId);
@@ -51,6 +51,37 @@ export async function POST(request: Request) {
                         console.error('Failed to update order status:', updateError);
                         return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
                     }
+
+                    // [NEW] Award points logic (duplicated from notify/orders route)
+                    // We need to use admin client to update user points if RLS blocks it,
+                    // but here we are logged in as the user. Users usually can't update their own points.
+                    // So we might need createAdminClient if RLS is strict.
+                    // Let's import createAdminClient to be safe.
+                    const { createAdminClient } = await import('@/lib/supabase/admin');
+                    const adminClient = createAdminClient();
+
+                    const pointsAwarded = Math.floor(order.cost || 0);
+                    if (pointsAwarded > 0 && order.user_id) {
+                        // 1. Get current points
+                        const { data: userProfile } = await adminClient
+                            .from('users')
+                            .select('points')
+                            .eq('id', order.user_id)
+                            .single();
+
+                        // 2. Update points
+                        const newPoints = (userProfile?.points || 0) + pointsAwarded;
+                        await adminClient.from('users').update({ points: newPoints }).eq('id', order.user_id);
+
+                        // 3. Log
+                        await adminClient.from('point_logs').insert({
+                            user_id: order.user_id,
+                            amount: pointsAwarded,
+                            type: 'EARN',
+                            reason: `订单完成奖励 (手动查询)`
+                        });
+                    }
+
                     return NextResponse.json({
                         paid: true,
                         updated: true,
