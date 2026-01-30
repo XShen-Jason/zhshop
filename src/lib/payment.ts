@@ -46,7 +46,7 @@ export class PaymentService {
         const payAmount = '0.01';
         // const payAmount = amount.toFixed(2); // Original logic
 
-        const payType = 'aloop'; // Default to Alipay loop as per doc recommendation
+        const payType = 'wechat'; // Changed to 'wechat' as user only has WeChat configured
 
         // Signature format: merchantNum + orderNo + amount + notifyUrl + secret
         const signStr = MERCHANT_NUM + orderNo + payAmount + NOTIFY_URL + SECRET;

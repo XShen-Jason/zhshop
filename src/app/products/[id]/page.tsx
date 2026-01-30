@@ -69,7 +69,11 @@ export default function ProductDetailPage() {
                 if (data.payUrl) {
                     // Redirect to payment page
                     window.location.href = data.payUrl;
-                    return; // Stop execution to prevent showing "Submitted" state immediately
+                    return;
+                }
+                if (data.paymentError) {
+                    alert(`订单已创建，但支付启动失败: ${data.paymentError}`);
+                    // Still show submitted state so they confirm the order exists locally
                 }
                 setSubmitted(true);
             } else {
