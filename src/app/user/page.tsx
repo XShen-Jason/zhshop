@@ -382,15 +382,6 @@ export default function UserPage() {
                                                     )}
 
                                                     <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setEditingOrder(order);
-                                                        }}
-                                                        className="px-3 py-1.5 text-sm bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 flex items-center"
-                                                    >
-                                                        <Edit2 size={14} className="mr-1" /> 修改
-                                                    </button>
-                                                    <button
                                                         onClick={async (e) => {
                                                             e.stopPropagation();
                                                             if (!confirm('确定取消此订单吗？')) return;

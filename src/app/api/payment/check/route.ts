@@ -37,12 +37,25 @@ export async function POST(request: Request) {
 
         if (queryResult && queryResult.success) {
             if (queryResult.status === '4') { // 4 = Paid Success
-                // Update order to completed if not already
-                if (order.status !== '已完成') {
-                    const { error: updateError } = await supabase
+                // Update order to 'Completed' (for digital auto-delivery) or '待联系' (for manual)
+                // Since this system seems to rely on manual 'Wait for Contact' for products:
+                // If it is a PRODUCT, set to '待联系'
+                // If the logic in notify was: Product -> '待联系'.
+
+                let newStatus = 'Completed';
+                if (order.item_type === 'PRODUCT') {
+                    newStatus = '待联系';
+                }
+
+                if (order.status !== newStatus && order.status !== 'Completed') {
+                    // Use Admin Client to bypass RLS for status update
+                    const { createAdminClient } = await import('@/lib/supabase/admin');
+                    const adminClient = createAdminClient();
+
+                    const { error: updateError } = await adminClient
                         .from('orders')
                         .update({
-                            status: '已完成',
+                            status: newStatus,
                             updated_at: new Date().toISOString()
                         })
                         .eq('id', orderId);
@@ -51,37 +64,6 @@ export async function POST(request: Request) {
                         console.error('Failed to update order status:', updateError);
                         return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
                     }
-
-                    // [NEW] Award points logic (duplicated from notify/orders route)
-                    // We need to use admin client to update user points if RLS blocks it,
-                    // but here we are logged in as the user. Users usually can't update their own points.
-                    // So we might need createAdminClient if RLS is strict.
-                    // Let's import createAdminClient to be safe.
-                    const { createAdminClient } = await import('@/lib/supabase/admin');
-                    const adminClient = createAdminClient();
-
-                    const pointsAwarded = Math.floor(order.cost || 0);
-                    if (pointsAwarded > 0 && order.user_id) {
-                        // 1. Get current points
-                        const { data: userProfile } = await adminClient
-                            .from('users')
-                            .select('points')
-                            .eq('id', order.user_id)
-                            .single();
-
-                        // 2. Update points
-                        const newPoints = (userProfile?.points || 0) + pointsAwarded;
-                        await adminClient.from('users').update({ points: newPoints }).eq('id', order.user_id);
-
-                        // 3. Log
-                        await adminClient.from('point_logs').insert({
-                            user_id: order.user_id,
-                            amount: pointsAwarded,
-                            type: 'EARN',
-                            reason: `订单完成奖励 (手动查询)`
-                        });
-                    }
-
                     return NextResponse.json({
                         paid: true,
                         updated: true,
@@ -91,7 +73,7 @@ export async function POST(request: Request) {
                 return NextResponse.json({
                     paid: true,
                     updated: false,
-                    message: '订单已是支付成功状态'
+                    message: `订单已支付 (${order.status})`
                 });
             } else {
                 return NextResponse.json({
