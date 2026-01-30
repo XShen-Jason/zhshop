@@ -314,6 +314,7 @@ export async function POST(request: Request) {
         // [NEW] Initiate Payment for regular PRODUCT orders too
         let payUrl = null;
         const orderCost = body.cost || 0;
+        let paymentError = null;
         console.log('[DEBUG] Order initiated. Type:', body.itemType, 'Cost:', orderCost);
 
         if (orderCost > 0) {
@@ -331,15 +332,17 @@ export async function POST(request: Request) {
                     payUrl = paymentResult.payUrl;
                 } else {
                     console.error('[DEBUG] Payment creation failed:', paymentResult);
+                    paymentError = paymentResult?.msg || 'Payment failed';
                 }
             } catch (err) {
                 console.error('[DEBUG] Payment import/exec error:', err);
+                paymentError = 'Internal Server Error during payment';
             }
         } else {
             console.log('[DEBUG] Cost is 0 or less, skipping payment.');
         }
 
-        return NextResponse.json({ success: true, order: data, payUrl: payUrl });
+        return NextResponse.json({ success: true, order: data, payUrl: payUrl, paymentError });
     } catch (error) {
         console.error('Error creating order:', error);
         return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
