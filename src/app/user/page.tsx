@@ -308,9 +308,9 @@ export default function UserPage() {
                             {orders.map(order => {
                                 const detailLink = order.itemType === 'PRODUCT' ? `/products/${order.itemId}` :
                                     order.itemType === 'GROUP' ? `/groups/${order.itemId}` : null;
-                                const content = (
-                                    <div className="p-6 md:p-8 hover:bg-gray-50/80 transition flex flex-col md:flex-row justify-between items-start md:items-center group">
-                                        <div className="mb-4 md:mb-0">
+                                return (
+                                    <div key={order.id} className="p-6 md:p-8 hover:bg-gray-50/80 transition flex flex-col md:flex-row justify-between items-start md:items-center group border-b border-gray-50 last:border-0">
+                                        <div className="mb-4 md:mb-0 md:flex-1 cursor-pointer" onClick={() => detailLink && router.push(detailLink)}>
                                             <div className="flex items-center mb-2">
                                                 <h4 className="font-bold text-lg text-gray-900 mr-3 group-hover:text-indigo-600 transition-colors">{order.itemName}</h4>
                                                 <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">{
@@ -344,6 +344,7 @@ export default function UserPage() {
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="px-4 py-2 text-sm font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center animate-pulse"
+                                                    onClick={(e) => e.stopPropagation()}
                                                 >
                                                     去支付 <ArrowRight size={14} className="ml-1" />
                                                 </a>
@@ -355,7 +356,6 @@ export default function UserPage() {
                                                     {(order.status === '待支付') && (
                                                         <button
                                                             onClick={(e) => {
-                                                                e.preventDefault();
                                                                 e.stopPropagation();
                                                                 checkPayment(order.id);
                                                             }}
@@ -370,7 +370,6 @@ export default function UserPage() {
                                                     {order.status === '待联系' && (
                                                         <button
                                                             onClick={(e) => {
-                                                                e.preventDefault();
                                                                 e.stopPropagation();
                                                                 checkPayment(order.id);
                                                             }}
@@ -384,7 +383,6 @@ export default function UserPage() {
 
                                                     <button
                                                         onClick={(e) => {
-                                                            e.preventDefault();
                                                             e.stopPropagation();
                                                             setEditingOrder(order);
                                                         }}
@@ -394,7 +392,6 @@ export default function UserPage() {
                                                     </button>
                                                     <button
                                                         onClick={async (e) => {
-                                                            e.preventDefault();
                                                             e.stopPropagation();
                                                             if (!confirm('确定取消此订单吗？')) return;
                                                             setActionLoading(true);
@@ -425,7 +422,6 @@ export default function UserPage() {
                                             {(order.itemType !== 'PRODUCT' || (order.status !== '待联系' && order.status !== '待支付')) && (
                                                 <button
                                                     onClick={(e) => {
-                                                        e.preventDefault();
                                                         e.stopPropagation();
                                                         setEditingContact({
                                                             type: 'order',
@@ -444,13 +440,6 @@ export default function UserPage() {
                                             {detailLink && <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600" />}
                                         </div>
                                     </div>
-                                );
-                                return detailLink ? (
-                                    <Link key={order.id} href={detailLink} className="block">
-                                        {content}
-                                    </Link>
-                                ) : (
-                                    <div key={order.id}>{content}</div>
                                 );
                             })}
                         </div>
