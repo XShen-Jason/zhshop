@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { ImageIcon, Eye, Edit3, Upload } from 'lucide-react';
+import { useUI } from '@/lib/UIContext';
 
 interface MarkdownEditorProps {
     value: string;
@@ -22,6 +23,7 @@ export default function MarkdownEditor({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [uploading, setUploading] = useState(false);
     const [previewMode, setPreviewMode] = useState(false);
+    const { showToast } = useUI();
 
     // Handle paste event for images
     const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
@@ -74,11 +76,11 @@ export default function MarkdownEditor({
                 insertAtCursor(`![${file.name}](${url})`);
             } else {
                 const error = await res.json();
-                alert(error.error || '图片上传失败');
+                showToast(error.error || '图片上传失败', 'error');
             }
         } catch (error) {
             console.error('Upload error:', error);
-            alert('图片上传失败');
+            showToast('图片上传失败', 'error');
         } finally {
             setUploading(false);
         }

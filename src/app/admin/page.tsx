@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { formatBeijing, utcToBeijingInputString } from '@/lib/timezone';
 import { useRealtimeSubscription } from '@/lib/useRealtimeSubscription';
 import MarkdownEditor from '@/components/MarkdownEditor';
+import { useUI } from '@/lib/UIContext';
 
 
 // Define Types locally if not in @/types perfectly yet
@@ -90,6 +91,7 @@ export default function AdminPage() {
 
     const router = useRouter();
     const supabase = createClient();
+    const { showToast, showConfirm, showPrompt } = useUI();
 
     // Separate fetch functions for each data type
     const fetchOrders = async (silent = false) => {
@@ -239,18 +241,19 @@ export default function AdminPage() {
                 // Immediately refresh only the relevant data (silent) - don't wait for Realtime
                 if (refreshFn) await refreshFn();
             } else {
-                alert('操作失败');
+                showToast('操作失败', 'error');
             }
         } catch (e) {
             console.error(e);
-            alert('发生错误');
+            showToast('发生错误', 'error');
         } finally {
             setActionLoading(false);
         }
     };
 
     const handleDelete = async (url: string, id: string, refreshFn?: () => Promise<void>) => {
-        if (!confirm('确定删除吗？')) return;
+        const confirmed = await showConfirm('确认删除', '确定删除吗？');
+        if (!confirmed) return;
         try {
             await fetch(url, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
             // Immediately refresh only the relevant data (silent)
@@ -259,7 +262,8 @@ export default function AdminPage() {
     };
 
     const handleBatchRename = async (type: 'category' | 'subCategory', oldName: string, newName: string, parentCategory?: string) => {
-        if (!confirm(`确定将 "${oldName}" 重命名为 "${newName}" 吗？所有相关商品都将更新。`)) return;
+        const confirmed = await showConfirm('批量重命名', `确定将 "${oldName}" 重命名为 "${newName}" 吗？所有相关商品都将更新。`);
+        if (!confirmed) return;
         try {
             const res = await fetch('/api/categories', {
                 method: 'PUT',
@@ -268,14 +272,14 @@ export default function AdminPage() {
             });
 
             if (res.ok) {
-                alert('重命名成功');
+                showToast('重命名成功', 'success');
                 fetchProducts(true);
             } else {
-                alert('重命名失败');
+                showToast('重命名失败', 'error');
             }
         } catch (e) {
             console.error(e);
-            alert('网络错误');
+            showToast('网络错误', 'error');
         }
     };
 
@@ -312,7 +316,8 @@ export default function AdminPage() {
     const [showCategoryModal, setShowCategoryModal] = useState(false);
 
     const handleCategoryRename = async (oldName: string, newName: string) => {
-        if (!confirm(`确定将 "${oldName}" 重命名为 "${newName}" 吗？所有相关商品都将更新。`)) return;
+        const confirmed = await showConfirm('分类重命名', `确定将 "${oldName}" 重命名为 "${newName}" 吗？所有相关商品都将更新。`);
+        if (!confirmed) return;
 
         try {
             const res = await fetch('/api/categories', {
@@ -322,20 +327,21 @@ export default function AdminPage() {
             });
 
             if (res.ok) {
-                alert('分类重命名成功');
+                showToast('分类重命名成功', 'success');
                 fetchProducts(true);
             } else {
-                alert('重命名失败');
+                showToast('重命名失败', 'error');
             }
         } catch (e) {
             console.error(e);
-            alert('网络错误');
+            showToast('网络错误', 'error');
         }
     };
 
     // Specific Feature Handlers
     const updateGroupStatus = async (id: string, status: string) => {
-        if (!confirm('确定要更新拼团状态吗？')) return;
+        const confirmed = await showConfirm('更新拼团状态', '确定要更新拼团状态吗？');
+        if (!confirmed) return;
 
         // Optimistic update
         setGroups(prev => prev.map(g => g.id === id ? { ...g, status } : g));
@@ -349,12 +355,13 @@ export default function AdminPage() {
             fetchGroups(true);
         } catch (e) {
             console.error(e);
-            alert('更新失败');
+            showToast('更新失败', 'error');
         }
     };
 
     const executeDraw = async (id: string) => {
-        if (!confirm('确定现在开奖吗？系统将自动随机抽取中奖者。')) return;
+        const confirmed = await showConfirm('立即开奖', '确定现在开奖吗？系统将自动随机抽取中奖者。');
+        if (!confirmed) return;
         try {
             const res = await fetch('/api/lottery/draw', {
                 method: 'POST',
@@ -363,13 +370,13 @@ export default function AdminPage() {
             });
             if (res.ok) {
                 const data = await res.json();
-                alert(`开奖成功！共有 ${data.winnersCount} 位中奖者。`);
+                showToast(`开奖成功！共有 ${data.winnersCount} 位中奖者。`, 'success');
                 fetchLotteries(true);
             } else {
                 const err = await res.json();
-                alert('开奖失败: ' + (err.error || '未知错误'));
+                showToast('开奖失败: ' + (err.error || '未知错误'), 'error');
             }
-        } catch (e) { console.error(e); alert('网络错误'); }
+        } catch (e) { console.error(e); showToast('网络错误', 'error'); }
     };
 
     const viewParticipants = async (type: 'GROUP' | 'LOTTERY', id: string) => {
@@ -433,13 +440,13 @@ export default function AdminPage() {
             maxQtyMsg = ` (当前库存允许最大: ${maxAllowed})`;
         }
 
-        const newQtyStr = prompt(`请输入新的数量${maxQtyMsg}:`, currentQty.toString());
+        const newQtyStr = await showPrompt(`修改数量${maxQtyMsg}`, '请输入新的数量:', currentQty.toString());
         if (newQtyStr === null) return;
         const newQty = parseInt(newQtyStr);
-        if (isNaN(newQty) || newQty < 1) return alert('请输入有效数量');
+        if (isNaN(newQty) || newQty < 1) return showToast('请输入有效数量', 'error');
 
         if (newQty > maxAllowed) {
-            return alert(`修改失败：数量不能超过 ${maxAllowed}`);
+            return showToast(`修改失败：数量不能超过 ${maxAllowed}`, 'error');
         }
 
         try {
@@ -448,30 +455,31 @@ export default function AdminPage() {
                 body: JSON.stringify({ groupId: currentViewId, userId, quantity: newQty })
             });
             if (res.ok) {
-                alert('修改成功');
+                showToast('修改成功', 'success');
                 viewParticipants('GROUP', currentViewId);
                 fetchGroups(true);
             } else {
-                alert('修改失败');
+                showToast('修改失败', 'error');
             }
-        } catch (e) { console.error(e); alert('网络错误'); }
+        } catch (e) { console.error(e); showToast('网络错误', 'error'); }
     };
 
     const handleParticipantDelete = async (userId: string) => {
-        if (!currentViewId || !confirm('确定要移除该成员吗？')) return;
+        const confirmed = await showConfirm('移除成员', '确定要移除该成员吗？');
+        if (!currentViewId || !confirmed) return;
         try {
             const res = await fetch('/api/groups/participants', {
                 method: 'DELETE',
                 body: JSON.stringify({ groupId: currentViewId, userId })
             });
             if (res.ok) {
-                alert('移除成功');
+                showToast('移除成功', 'success');
                 viewParticipants('GROUP', currentViewId);
                 fetchGroups(true);
             } else {
-                alert('移除失败');
+                showToast('移除失败', 'error');
             }
-        } catch (e) { console.error(e); alert('网络错误'); }
+        } catch (e) { console.error(e); showToast('网络错误', 'error'); }
     };
 
     // --- Renderers ---
@@ -1015,8 +1023,8 @@ export default function AdminPage() {
                                     <div className="flex items-center justify-between p-3 bg-gray-50 group">
                                         <span className="text-sm font-bold text-gray-800">{cat.name}</span>
                                         <button
-                                            onClick={() => {
-                                                const newName = prompt('重命名一级分类:', cat.name);
+                                            onClick={async () => {
+                                                const newName = await showPrompt('重命名一级分类', '请输入新的分类名称:', cat.name);
                                                 if (newName && newName !== cat.name) handleBatchRename('category', cat.name, newName);
                                             }}
                                             className="text-gray-400 hover:text-indigo-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1032,8 +1040,8 @@ export default function AdminPage() {
                                                     <div key={sub} className="flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs group/sub">
                                                         {sub}
                                                         <button
-                                                            onClick={() => {
-                                                                const newName = prompt('重命名二级分类:', sub);
+                                                            onClick={async () => {
+                                                                const newName = await showPrompt('重命名二级分类', '请输入新的分类名称:', sub);
                                                                 if (newName && newName !== sub) handleBatchRename('subCategory', sub, newName, cat.name);
                                                             }}
                                                             className="ml-2 text-blue-400 hover:text-blue-700"
@@ -1362,7 +1370,7 @@ export default function AdminPage() {
                                                     <td className="p-3">
                                                         <span
                                                             className="font-mono text-xs text-gray-500 cursor-pointer hover:text-indigo-600 flex items-center gap-1 group/copy"
-                                                            onClick={() => { navigator.clipboard.writeText(p.userId); alert('用户ID已复制'); }}
+                                                            onClick={() => { navigator.clipboard.writeText(p.userId); showToast('用户ID已复制', 'success'); }}
                                                             title="点击复制完整ID"
                                                         >
                                                             {p.userId.substring(0, 8)}...

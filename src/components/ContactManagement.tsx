@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, Phone, Mail, MessageCircle, Send } from 'lucide-react';
+import { useUI } from '@/lib/UIContext';
 
 interface Contact {
     type: string;
@@ -25,6 +26,7 @@ const CONTACT_TYPES = [
 ];
 
 export function ContactManagement({ initialContacts, onUpdate }: ContactManagementProps) {
+    const { showToast, showConfirm } = useUI();
     const [contacts, setContacts] = useState<Contact[]>(initialContacts || []);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -47,12 +49,13 @@ export function ContactManagement({ initialContacts, onUpdate }: ContactManageme
                 onUpdate();
                 setIsModalOpen(false);
                 setEditingIndex(null);
+                showToast('联系方式更新成功', 'success');
             } else {
-                alert('保存失败，请重试');
+                showToast('保存失败，请重试', 'error');
             }
         } catch (error) {
             console.error('Error saving contacts:', error);
-            alert('网络错误');
+            showToast('网络错误', 'error');
         } finally {
             setLoading(false);
         }
@@ -70,7 +73,8 @@ export function ContactManagement({ initialContacts, onUpdate }: ContactManageme
     };
 
     const handleDelete = async (index: number) => {
-        if (!confirm('确定删除此联系方式吗？')) return;
+        const confirmed = await showConfirm('删除联系方式', '确定删除此联系方式吗？');
+        if (!confirmed) return;
         const newContacts = contacts.filter((_, i) => i !== index);
         handleSave(newContacts);
     };

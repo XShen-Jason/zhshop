@@ -15,6 +15,7 @@ import { ProfileSettings } from '@/components/ProfileSettings';
 import { createClient } from '@/lib/supabase/client';
 import { Order } from '@/types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useUI } from '@/lib/UIContext';
 
 // Extend Order type locally if not updated in types file yet
 interface OrderWithPay extends Order {
@@ -66,6 +67,7 @@ interface GroupEntry {
 
 export default function UserPage() {
     const router = useRouter();
+    const { showToast, showConfirm } = useUI();
     const [user, setUser] = useState<SupabaseUser | null>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
@@ -373,7 +375,8 @@ export default function UserPage() {
                                                         <button
                                                             onClick={async (e) => {
                                                                 e.stopPropagation();
-                                                                if (!confirm('确定取消此订单吗？')) return;
+                                                                const confirmed = await showConfirm('取消订单', '确定取消此订单吗？');
+                                                                if (!confirmed) return;
                                                                 setLoadingOrderId(order.id);
                                                                 try {
                                                                     const res = await fetch('/api/orders', {
@@ -382,13 +385,13 @@ export default function UserPage() {
                                                                         body: JSON.stringify({ id: order.id })
                                                                     });
                                                                     if (res.ok) {
-                                                                        alert('订单已取消');
+                                                                        showToast('订单已取消', 'success');
                                                                         window.location.reload();
                                                                     } else {
                                                                         const err = await res.json();
-                                                                        alert(err.error || '取消失败');
+                                                                        showToast(err.error || '取消失败', 'error');
                                                                     }
-                                                                } catch { alert('网络错误'); }
+                                                                } catch { showToast('网络错误', 'error'); }
                                                                 setLoadingOrderId(null);
                                                             }}
                                                             disabled={loadingOrderId === order.id}
@@ -546,7 +549,8 @@ export default function UserPage() {
                                                             <button
                                                                 onClick={async (e) => {
                                                                     e.stopPropagation();
-                                                                    if (!confirm('确定取消参与此拼团？您的名额将被释放。')) return;
+                                                                    const confirmed = await showConfirm('取消拼团', '确定取消参与此拼团？您的名额将被释放。');
+                                                                    if (!confirmed) return;
                                                                     setActionLoading(true);
                                                                     try {
                                                                         const res = await fetch('/api/user/groups', {
@@ -555,13 +559,13 @@ export default function UserPage() {
                                                                             body: JSON.stringify({ groupId: entry.groupId })
                                                                         });
                                                                         if (res.ok) {
-                                                                            alert('已取消参与');
+                                                                            showToast('已取消参与', 'success');
                                                                             window.location.reload();
                                                                         } else {
                                                                             const err = await res.json();
-                                                                            alert(err.error || '取消失败');
+                                                                            showToast(err.error || '取消失败', 'error');
                                                                         }
-                                                                    } catch { alert('网络错误'); }
+                                                                    } catch { showToast('网络错误', 'error'); }
                                                                     setActionLoading(false);
                                                                 }}
                                                                 disabled={actionLoading}

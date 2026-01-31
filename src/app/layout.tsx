@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { createClient } from "@/lib/supabase/server";
+import { UIProvider } from "@/lib/UIContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,8 +23,10 @@ export default async function RootLayout({
   return (
     <html lang="zh-CN">
       <body className={`${inter.className} bg-gray-50 min-h-screen`}>
-        <Navbar user={user} />
-        <main>{children}</main>
+        <UIProvider>
+          <Navbar user={user} />
+          <main>{children}</main>
+        </UIProvider>
       </body>
     </html>
   );

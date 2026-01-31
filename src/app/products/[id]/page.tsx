@@ -8,10 +8,12 @@ import { Badge } from '@/components/ui/Badge';
 import { ContactSelector } from '@/components/ContactSelector';
 import { Product } from '@/types';
 import { createClient } from '@/lib/supabase/client';
+import { useUI } from '@/lib/UIContext';
 
 export default function ProductDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const { showToast } = useUI();
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [contact, setContact] = useState('');
@@ -54,6 +56,7 @@ export default function ProductDetailPage() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
+            showToast('请先登录', 'info');
             router.push('/auth/login');
             return;
         }
@@ -80,12 +83,12 @@ export default function ProductDetailPage() {
                 setSubmitted(true);
             } else {
                 if (res.status === 401) {
-                    alert('请先登录再进行购买');
+                    showToast('请先登录再进行购买', 'error');
                     router.push('/auth/login');
                     return;
                 }
                 const errorData = await res.json();
-                alert(errorData.error || '订单提交失败');
+                showToast(errorData.error || '订单提交失败', 'error');
                 // Update stock display if available
                 if (errorData.availableStock !== undefined) {
                     setProduct(prev => prev ? { ...prev, stock: errorData.availableStock } : null);
@@ -94,7 +97,7 @@ export default function ProductDetailPage() {
             }
         } catch (error) {
             console.error('Error creating order:', error);
-            alert('网络错误，请重试');
+            showToast('网络错误，请重试', 'error');
         } finally {
             setSubmitting(false);
         }

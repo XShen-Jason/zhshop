@@ -10,6 +10,7 @@ import { ContactSelector } from '@/components/ContactSelector';
 import { createClient } from '@/lib/supabase/client';
 import { formatBeijing } from '@/lib/timezone';
 import { Lottery } from '@/types';
+import { useUI } from '@/lib/UIContext';
 
 // Extended type for detail view
 interface LotteryDetail extends Lottery {
@@ -21,6 +22,7 @@ interface LotteryDetail extends Lottery {
 export default function LotteryDetailPage() {
     const router = useRouter();
     const params = useParams();
+    const { showToast, showConfirm } = useUI();
     const [lottery, setLottery] = useState<LotteryDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
@@ -77,11 +79,15 @@ export default function LotteryDetailPage() {
         }
 
         if (!contactInfo) {
-            alert('请选择中奖联系方式');
+            showToast('请选择中奖联系方式', 'info');
             return;
         }
 
-        if (!confirm(`确定消耗 ${lottery.entryCost} 积分参与此次抽奖吗？`)) return;
+        const confirmed = await showConfirm(
+            '参与抽奖',
+            `确定消耗 ${lottery.entryCost} 积分参与此次抽奖吗？`
+        );
+        if (!confirmed) return;
 
         setActionLoading(true);
         try {
@@ -94,15 +100,15 @@ export default function LotteryDetailPage() {
             const data = await res.json();
 
             if (res.ok) {
-                alert('参与成功！祝您好运！');
+                showToast('参与成功！祝您好运！', 'success');
                 // Refresh data
                 window.location.reload();
             } else {
-                alert(data.error || '参与失败');
+                showToast(data.error || '参与失败', 'error');
             }
         } catch (error) {
             console.error('Error entering lottery:', error);
-            alert('网络错误');
+            showToast('网络错误', 'error');
         } finally {
             setActionLoading(false);
         }

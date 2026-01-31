@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Save, User, Mail, MessageCircle, Phone, Send, CheckCircle, Plus, Trash2, Key } from 'lucide-react';
+import { useUI } from '@/lib/UIContext';
 
 interface Contact {
     type: string;
@@ -17,6 +18,7 @@ interface ProfileSettingsProps {
 }
 
 export function ProfileSettings({ initialContacts, userEmail, onUpdate }: ProfileSettingsProps) {
+    const { showToast } = useUI();
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
@@ -83,14 +85,15 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
 
             if (res.ok) {
                 setSuccess(true);
+                showToast('保存成功', 'success');
                 onUpdate();
                 setTimeout(() => setSuccess(false), 3000);
             } else {
-                alert('保存失败');
+                showToast('保存失败', 'error');
             }
         } catch (error) {
             console.error('Error saving profile:', error);
-            alert('网络错误');
+            showToast('网络错误', 'error');
         } finally {
             setLoading(false);
         }

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Users, Edit2, Minus, Plus, CheckCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ContactSelector } from '@/components/ContactSelector';
+import { useUI } from '@/lib/UIContext';
 
 interface ModifyParticipationModalProps {
     isOpen: boolean;
@@ -37,6 +38,7 @@ export function ModifyParticipationModal({
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
+    const { showConfirm } = useUI();
 
     // Calculate available slots correctly:
     // - For new participation: available = target - current (user hasn't taken any yet)
@@ -120,7 +122,8 @@ export function ModifyParticipationModal({
     };
 
     const handleCancel = async () => {
-        if (!confirm('确定取消参与？您的名额将被释放。')) return;
+        const confirmed = await showConfirm('取消参与', '确定取消参与？您的名额将被释放。');
+        if (!confirmed) return;
         setLoading(true);
         try {
             const res = await fetch('/api/user/groups', {
