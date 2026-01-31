@@ -19,6 +19,7 @@ export async function GET() {
             .single();
 
         // Self-healing: Create profile if missing
+        // Initialize profile if missing (Self-healing)
         if (error && error.code === 'PGRST116') {
             console.log('Profile missing for user, creating one...', user.id);
             const { error: insertError } = await supabase.from('users').insert({
@@ -26,13 +27,21 @@ export async function GET() {
                 email: user.email!,
                 name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
                 role: 'USER',
-                points: 100 // Give welcome points even for late creation
+                points: 100 // Give welcome points
             });
 
             if (insertError) {
                 console.error('Failed to auto-create profile:', insertError);
                 throw insertError;
             }
+
+            // Log the welcome points
+            await supabase.from('point_logs').insert({
+                user_id: user.id,
+                amount: 100,
+                reason: '新人注册奖励',
+                type: 'EARN'
+            });
 
             // Retry fetch
             const { data: newProfile, error: retryError } = await supabase
@@ -115,17 +124,18 @@ export async function POST() {
             // Otherwise streak resets to 1
         }
 
-        // Calculate points earned
-        let pointsEarned = 10; // Base check-in points
-        let bonusPoints = 0;
-
-        // 7-day streak bonus
-        if (newStreak > 0 && newStreak % 7 === 0) {
-            bonusPoints = 20;
+        // Calculate points earned based on Tiers
+        // 1-7 days: 10 points
+        // 8-30 days: 20 points
+        // 30+ days: 30 points
+        let pointsEarned = 10;
+        if (newStreak >= 30) {
+            pointsEarned = 30;
+        } else if (newStreak >= 8) {
+            pointsEarned = 20;
         }
 
-        const totalPoints = pointsEarned + bonusPoints;
-        const newPoints = (profile?.points || 0) + totalPoints;
+        const newPoints = (profile?.points || 0) + pointsEarned;
 
         // Update user
         const { error: updateError } = await supabase
@@ -143,21 +153,16 @@ export async function POST() {
         // Add point log
         await supabase.from('point_logs').insert({
             user_id: user.id,
-            amount: totalPoints,
-            reason: bonusPoints > 0 ?
-                `每日签到 +${pointsEarned} | 连续${newStreak}天奖励 +${bonusPoints}` :
-                `每日签到 (连续${newStreak}天)`,
+            amount: pointsEarned,
+            reason: `每日签到 (连续${newStreak}天)`,
             type: 'EARN'
         });
 
         return NextResponse.json({
             success: true,
-            pointsEarned: totalPoints,
-            basePoints: pointsEarned,
-            bonusPoints,
+            pointsEarned, // This is the total for the day
             newPoints,
-            streak: newStreak,
-            isStreakBonus: bonusPoints > 0
+            streak: newStreak
         });
     } catch (error) {
         console.error('Error checking in:', error);

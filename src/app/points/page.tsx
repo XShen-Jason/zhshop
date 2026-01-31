@@ -158,9 +158,11 @@ export default function PointsPage() {
                     获取积分的方式
                 </h4>
                 <ul className="space-y-2 text-amber-700 text-sm">
-                    <li>• 每日签到 +10 积分</li>
-                    <li>• 连续签到 7 天额外 +20 积分</li>
+                    <li>• 每日签到基础 +10 积分（连续 1-7 天）</li>
+                    <li>• 连续签到 8-30 天，每日 +20 积分</li>
+                    <li>• 连续签到 30 天以上，每日 +30 积分</li>
                     <li>• 首次注册 +100 积分</li>
+                    <li>• 断签后重新从基础积分计算</li>
                 </ul>
             </div>
         </div>

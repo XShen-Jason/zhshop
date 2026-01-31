@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Save, User, Mail, MessageCircle, Phone, Send, CheckCircle, Plus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { Save, User, Mail, MessageCircle, Phone, Send, CheckCircle, Plus, Trash2, Key } from 'lucide-react';
 
 interface Contact {
     type: string;
@@ -245,7 +246,13 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
                             <CheckCircle className="mr-2" /> 保存成功
                         </div>
                     ) : (
-                        <div className="text-sm text-gray-400">请确保填写正确，以便及时接收通知</div>
+                        <div className="flex items-center gap-4">
+                            <Link href="/auth/reset-password" className="text-sm text-gray-400 hover:text-indigo-600 flex items-center transition-colors">
+                                <Key size={14} className="mr-1" /> 重置密码
+                            </Link>
+                            <span className="text-gray-300">|</span>
+                            <div className="text-sm text-gray-400">请确保填写正确</div>
+                        </div>
                     )}
 
                     <button

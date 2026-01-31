@@ -54,11 +54,8 @@ export async function GET() {
             cost: o.cost,
             currency: o.currency,
             quantity: o.quantity || 1,
-<<<<<<< HEAD
-            pay_url: o.pay_url
-=======
+            pay_url: o.pay_url,
             savedContacts: o.users?.saved_contacts || []
->>>>>>> main
         }));
 
         return NextResponse.json(orders);
