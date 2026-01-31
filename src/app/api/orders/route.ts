@@ -24,7 +24,7 @@ export async function GET() {
 
         let query = supabase
             .from('orders')
-            .select('*')
+            .select('*, users(saved_contacts)')
             .order('created_at', { ascending: false });
 
         // If not admin, only show own orders
@@ -54,7 +54,11 @@ export async function GET() {
             cost: o.cost,
             currency: o.currency,
             quantity: o.quantity || 1,
+<<<<<<< HEAD
             pay_url: o.pay_url
+=======
+            savedContacts: o.users?.saved_contacts || []
+>>>>>>> main
         }));
 
         return NextResponse.json(orders);

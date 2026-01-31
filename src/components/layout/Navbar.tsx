@@ -11,17 +11,25 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 const navItems = [
     { href: '/', label: '首页', icon: Home },
     { href: '/products', label: '商店', icon: ShoppingBag },
-    { href: '/groups', label: '拼车', icon: Users },
+    { href: '/groups', label: '拼团', icon: Users },
     { href: '/lottery', label: '抽奖', icon: Gift },
     { href: '/tutorials', label: '教程', icon: BookOpen },
 ];
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+    user?: SupabaseUser | null;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
     const pathname = usePathname();
     const router = useRouter();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [user, setUser] = useState<SupabaseUser | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<SupabaseUser | null>(initialUser);
+    const [loading, setLoading] = useState(initialUser === undefined);
+
+    // Sync state if prop changes (e.g. server re-render after login)
+
+
     const [points, setPoints] = useState(0);
     const [streak, setStreak] = useState(0);
     const [canCheckIn, setCanCheckIn] = useState(false);
@@ -53,6 +61,23 @@ export const Navbar: React.FC = () => {
             fetchingRef.current = false;
         }
     }, []);
+
+    // Sync state if prop changes (e.g. server re-render after login)
+    useEffect(() => {
+        if (initialUser !== undefined) {
+            setUser(initialUser);
+            setLoading(false);
+
+            if (initialUser) {
+                fetchCheckInStatus();
+            } else {
+                setPoints(0);
+                setStreak(0);
+                setCanCheckIn(false);
+            }
+        }
+    }, [initialUser, fetchCheckInStatus]);
+
 
     useEffect(() => {
         const supabase = createClient();
@@ -292,13 +317,8 @@ export const Navbar: React.FC = () => {
                             <div className="border-t border-gray-100 mt-2 pt-2">
                                 {user ? (
                                     <>
-                                        <Link
-                                            href="/user"
-                                            onClick={() => setMobileMenuOpen(false)}
-                                            className="flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
-                                        >
-                                            <User size={18} className="mr-3" />
-                                            用户中心
+                                        <Link href="/groups" className={`text-base font-medium transition block py-2 text-lg ${pathname?.startsWith('/groups') ? 'text-indigo-600 font-bold' : 'text-gray-600 hover:text-indigo-600'}`}>
+                                            拼团
                                         </Link>
                                         <button
                                             onClick={() => {

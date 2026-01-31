@@ -33,7 +33,7 @@ export async function GET(request: Request) {
         const adminClient = createAdminClient();
         const { data, error } = await adminClient
             .from('group_participants')
-            .select('user_id, joined_at, quantity, contact_info, users(email, name)')
+            .select('user_id, joined_at, quantity, contact_info, users(email, name, saved_contacts)')
             .eq('group_id', groupId);
 
         if (error) throw error;
@@ -50,7 +50,8 @@ export async function GET(request: Request) {
                     joinedAt: d.joined_at,
                     quantity: 0,
                     users: d.users,
-                    name: d.users?.name // Explicitly set name
+                    name: d.users?.name, // Explicitly set name
+                    savedContacts: d.users?.saved_contacts || []
                 };
             }
             acc[userIdKey].quantity += (d.quantity || 1);

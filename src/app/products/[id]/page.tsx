@@ -5,7 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, BookOpen, ArrowRight, Minus, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
+import { ContactSelector } from '@/components/ContactSelector';
 import { Product } from '@/types';
+import { createClient } from '@/lib/supabase/client';
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -47,6 +49,14 @@ export default function ProductDetailPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!product) return;
+
+        // Check auth first
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            router.push('/auth/login');
+            return;
+        }
 
         setSubmitting(true);
         try {
@@ -216,13 +226,10 @@ export default function ProductDetailPage() {
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">联系方式</label>
-                                <input
-                                    required
-                                    type="text"
-                                    placeholder="Telegram 用户名 / 邮箱"
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
+                                <ContactSelector
                                     value={contact}
-                                    onChange={(e) => setContact(e.target.value)}
+                                    onChange={setContact}
+                                    placeholder="Telegram 用户名 / 邮箱"
                                 />
                                 <p className="text-xs text-gray-400 mt-2">管理员将通过此方式与您联系发货。</p>
                             </div>

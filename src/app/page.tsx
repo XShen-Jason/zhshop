@@ -14,6 +14,7 @@ export default function HomePage() {
     const [lotteries, setLotteries] = useState<Lottery[]>([]);
     const [loading, setLoading] = useState(true);
     const [productCategory, setProductCategory] = useState('全部');
+    const [productSubCategory, setProductSubCategory] = useState('全部');
 
     const fetchingRef = useRef(false);
 
@@ -47,6 +48,9 @@ export default function HomePage() {
     }, [fetchData]);
 
     const categories = ['全部', ...Array.from(new Set(products.map(p => p.category)))];
+    const subCategories = productCategory === '全部'
+        ? []
+        : ['全部', ...Array.from(new Set(products.filter(p => p.category === productCategory).map(p => p.subCategory).filter(Boolean) as string[]))];
 
     const isAvailable = (p: Product) => {
         if (!p.inStock) return false;
@@ -55,7 +59,12 @@ export default function HomePage() {
     };
 
     // Sort: available first
-    const filteredProducts = (productCategory === '全部' ? products : products.filter(p => p.category === productCategory))
+    const filteredProducts = products
+        .filter(p => {
+            if (productCategory !== '全部' && p.category !== productCategory) return false;
+            if (productSubCategory !== '全部' && p.subCategory !== productSubCategory) return false;
+            return true;
+        })
         .sort((a, b) => {
             const aAvail = isAvailable(a);
             const bAvail = isAvailable(b);
@@ -152,7 +161,10 @@ export default function HomePage() {
                                 <div className="p-3 rounded-lg border border-gray-100 hover:border-amber-200 hover:bg-amber-50/30 transition">
                                     <div className="flex justify-between items-start mb-1">
                                         <h3 className="font-bold text-gray-800 text-sm line-clamp-1">{l.title}</h3>
-                                        <Badge status={l.status} />
+                                        <div className="flex gap-1">
+                                            {l.hasEntered && <Badge status="已参与" className="bg-green-100 text-green-700 border-green-200" />}
+                                            <Badge status={l.status} />
+                                        </div>
                                     </div>
                                     <div className="flex justify-between items-center text-xs text-gray-500">
                                         <span className="flex items-center"><Clock size={12} className="mr-1" />{l.drawDate?.split('T')[0]}</span>
@@ -176,32 +188,62 @@ export default function HomePage() {
                         全部 <ArrowRight size={14} className="ml-1" />
                     </Link>
                 </div>
-                {/* Category Tabs */}
-                <div className="px-5 py-3 border-b border-gray-50 flex gap-3 overflow-x-auto">
-                    {categories.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setProductCategory(cat)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${productCategory === cat ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
+                {/* Enhanced Category Tabs */}
+                <div className="flex flex-col border-b border-gray-100 bg-gray-50/50 rounded-t-xl overflow-hidden">
+                    {/* Main Categories */}
+                    <div className="px-5 py-3 flex gap-4 overflow-x-auto hide-scrollbar">
+                        {categories.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => { setProductCategory(cat); setProductSubCategory('全部'); }}
+                                className={`relative px-2 py-2 text-sm font-bold whitespace-nowrap transition-colors ${productCategory === cat
+                                        ? 'text-indigo-600'
+                                        : 'text-gray-500 hover:text-gray-800'
+                                    }`}
+                            >
+                                {cat}
+                                {productCategory === cat && (
+                                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 rounded-full animate-fade-in" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                    {/* Sub Categories */}
+                    {subCategories.length > 1 && (
+                        <div className="px-5 pb-3 flex gap-2 overflow-x-auto hide-scrollbar animate-fade-in">
+                            {subCategories.map(sub => (
+                                <button
+                                    key={sub}
+                                    onClick={() => setProductSubCategory(sub)}
+                                    className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all border ${productSubCategory === sub
+                                            ? 'bg-white border-indigo-200 text-indigo-700 shadow-sm'
+                                            : 'bg-transparent border-transparent text-gray-500 hover:bg-white hover:text-gray-700'
+                                        }`}
+                                >
+                                    {sub}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
+
                 {/* Product Grid */}
                 <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     {filteredProducts.slice(0, 8).map(p => (
                         <Link key={p.id} href={`/products/${p.id}`}>
-                            <Card className="group h-full">
-                                <div className="p-4">
+                            <Card className="group h-full flex flex-col hover:shadow-lg transition-all duration-300 border-transparent hover:border-indigo-100">
+                                <div className="p-4 flex-1 flex flex-col">
                                     <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-gray-800 group-hover:text-indigo-600 transition line-clamp-1">{p.title}</h3>
-                                        <Badge status={isAvailable(p) ? '有货' : '无货'} />
+                                        <div className="flex flex-col">
+                                            <h3 className="font-bold text-gray-800 group-hover:text-indigo-600 transition line-clamp-1">{p.title}</h3>
+                                            {(p.subCategory) && <span className="text-[10px] text-gray-400 font-medium">{p.subCategory}</span>}
+                                        </div>
+                                        <Badge status={isAvailable(p) ? '有货' : '无货'} className={isAvailable(p) ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-400'} />
                                     </div>
-                                    <p className="text-xs text-gray-500 line-clamp-2 mb-3">{p.description}</p>
-                                    <div className="flex justify-between items-center">
+                                    <p className="text-xs text-gray-500 line-clamp-2 mb-3 mt-1 flex-1">{p.description}</p>
+                                    <div className="flex justify-between items-center mt-auto pt-3 border-t border-gray-50">
                                         <span className="text-lg font-bold text-gray-900">¥{p.price}</span>
-                                        {typeof p.stock === 'number' && <span className="text-xs text-gray-400">库存: {p.stock}</span>}
+                                        {typeof p.stock === 'number' && <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded">库存: {p.stock}</span>}
                                     </div>
                                 </div>
                             </Card>

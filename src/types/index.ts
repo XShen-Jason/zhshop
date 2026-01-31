@@ -37,6 +37,7 @@ export interface Product {
     description: string;
     price: number;
     category: string;
+    subCategory?: string;
     inStock: boolean;
     stock: number;
     features: string[];
@@ -93,6 +94,7 @@ export interface Order {
     cost?: number;
     currency?: 'USD' | 'CNY' | 'POINTS';
     quantity?: number;
+    savedContacts?: { type: string; value: string }[];
 }
 
 export interface PointLog {

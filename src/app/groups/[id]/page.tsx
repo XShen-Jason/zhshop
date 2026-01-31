@@ -30,10 +30,8 @@ export default function GroupDetailPage() {
     const fetchGroupData = useCallback(async (groupId: string, isInitial = false) => {
         // Debounce: skip if fetched within last 500ms
         const now = Date.now();
-        if (!isInitial && now - lastFetchRef.current < 500) return;
-        if (fetchingRef.current) return;
+        if (!isInitial && now - lastFetchRef.current < 500) return null;
 
-        fetchingRef.current = true;
         lastFetchRef.current = now;
 
         try {
@@ -41,49 +39,58 @@ export default function GroupDetailPage() {
             if (res.ok) {
                 const data = await res.json();
                 setGroup(data);
+                return data;
             } else {
                 router.replace('/groups');
+                return null;
             }
         } catch (error) {
             console.error('Error fetching group:', error);
-        } finally {
-            fetchingRef.current = false;
+            return null;
         }
-    }, []);
+    }, [router]);
 
     useEffect(() => {
         async function fetchData() {
             if (!params.id) return;
 
+            // Prevent duplicate execution
+            if (fetchingRef.current) return;
+            fetchingRef.current = true;
+
             try {
                 // Fetch group
-                await fetchGroupData(params.id as string, true);
+                const groupData = await fetchGroupData(params.id as string, true);
 
-                // Check if user is logged in and has participation
-                const supabase = createClient();
-                const { data: { user } } = await supabase.auth.getUser();
-                setIsLoggedIn(!!user);
+                // Only proceed if group exists
+                if (groupData) {
+                    // Check if user is logged in and has participation
+                    const supabase = createClient();
+                    const { data: { user } } = await supabase.auth.getUser();
+                    setIsLoggedIn(!!user);
 
-                if (user) {
-                    // Fetch user's participation in this group
-                    const { data: participations } = await supabase
-                        .from('group_participants')
-                        .select('quantity, contact_info')
-                        .eq('group_id', params.id)
-                        .eq('user_id', user.id);
+                    if (user) {
+                        // Fetch user's participation in this group
+                        const { data: participations } = await supabase
+                            .from('group_participants')
+                            .select('quantity, contact_info')
+                            .eq('group_id', params.id)
+                            .eq('user_id', user.id);
 
-                    if (participations && participations.length > 0) {
-                        const totalQty = participations.reduce((sum, p) => sum + (p.quantity || 1), 0);
-                        setUserParticipation({
-                            quantity: totalQty,
-                            contactInfo: participations[0].contact_info || ''
-                        });
+                        if (participations && participations.length > 0) {
+                            const totalQty = participations.reduce((sum, p) => sum + (p.quantity || 1), 0);
+                            setUserParticipation({
+                                quantity: totalQty,
+                                contactInfo: participations[0].contact_info || ''
+                            });
+                        }
                     }
                 }
             } catch (error) {
                 console.error('Error fetching group:', error);
             } finally {
                 setLoading(false);
+                fetchingRef.current = false;
             }
         }
         fetchData();

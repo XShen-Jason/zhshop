@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Minus, Plus, Save } from 'lucide-react';
+import { ContactSelector } from '@/components/ContactSelector';
 
 interface ModifyOrderModalProps {
     isOpen: boolean;
@@ -104,13 +105,10 @@ export function ModifyOrderModal({
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">联系方式</label>
-                        <input
-                            type="text"
-                            required
+                        <ContactSelector
                             value={contact}
-                            onChange={(e) => setContact(e.target.value)}
+                            onChange={setContact}
                             placeholder="Telegram 用户名 / 邮箱"
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
                         />
                     </div>
 

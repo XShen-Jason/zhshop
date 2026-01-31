@@ -27,6 +27,7 @@ export async function GET(request: Request) {
             description: p.description,
             price: p.price,
             category: p.category,
+            subCategory: p.sub_category,
             inStock: p.in_stock,
             stock: p.stock || 0,
             features: p.features || [],
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
             description: body.description,
             price: body.price,
             category: body.category,
+            sub_category: body.subCategory,
             in_stock: body.inStock ?? true,
             stock: body.stock ?? 0,
             features: body.features || [],
@@ -95,6 +97,7 @@ export async function PUT(request: Request) {
         if (body.description) updateData.description = body.description;
         if (body.price !== undefined) updateData.price = body.price;
         if (body.category) updateData.category = body.category;
+        if (body.subCategory !== undefined) updateData.sub_category = body.subCategory;
         if (body.inStock !== undefined) updateData.in_stock = body.inStock;
         if (body.stock !== undefined) updateData.stock = body.stock;
         if (body.features) updateData.features = body.features;
