@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-import { User as UserIcon, Gift, ShoppingBag, Clock, ChevronRight, LogOut, Award, Calendar, Coins, Trophy, ArrowRight, TrendingUp, TrendingDown, Users, Edit2, X, RefreshCcw } from 'lucide-react';
+import { User as UserIcon, Gift, ShoppingBag, Clock, ChevronRight, LogOut, Award, Calendar, Coins, Trophy, ArrowRight, TrendingUp, TrendingDown, Users, Edit2, X } from 'lucide-react';
 
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -179,45 +179,7 @@ export default function UserPage() {
         router.refresh();
     };
 
-    const checkPayment = async (orderId: string) => {
-        if (!confirm('是否向支付平台查询该订单的最新状态？')) return;
-        setLoadingOrderId(orderId);
-        try {
-            const res = await fetch('/api/payment/check', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId })
-            });
-            const data = await res.json();
-            if (data.paid && data.updated) {
-                alert(data.message);
-                // Update local state without reload
-                setOrders(prev => prev.map(o => {
-                    if (o.id === orderId) {
-                        // If it was a PRODUCT, status becomes '待联系'
-                        // If logic changed in API, we should ideally fetch the new status, 
-                        // but here we can infer based on our API logic:
-                        // Product -> '待联系', Others (digital auto) -> 'Completed'
-                        let newStatus = 'Completed';
-                        if (o.itemType === 'PRODUCT') newStatus = '待联系';
 
-                        return { ...o, status: newStatus };
-                    }
-                    return o;
-                }));
-            } else if (data.paid && !data.updated) {
-                alert(data.message);
-                // No status change needed presumably, or already updated
-                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: o.itemType === 'PRODUCT' ? '待联系' : 'Completed' } : o));
-            } else {
-                alert(data.message || data.error || '未查询到支付成功记录');
-            }
-        } catch (e) {
-            alert('查询失败');
-        } finally {
-            setLoadingOrderId(null);
-        }
-    };
 
     const pendingCount = orders.filter(o => o.status === '待联系' || o.status === '待支付').length;
     const wonCount = lotteries.filter(l => l.isWinner).length;
@@ -402,49 +364,11 @@ export default function UserPage() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
-                                                {/* Show Pay button for Pending Payment orders */}
-                                                {order.status === '待支付' && (order as OrderWithPay).pay_url && (
-                                                    <a
-                                                        href={(order as OrderWithPay).pay_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="px-4 py-2 text-sm font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center animate-pulse"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    >
-                                                        去支付 <ArrowRight size={14} className="ml-1" />
-                                                    </a>
-                                                )}
+                                                {/* Actions */}
 
                                                 {/* Show modify/cancel buttons only for PRODUCT orders with 待联系 status */}
-                                                {order.itemType === 'PRODUCT' && (order.status === '待联系' || order.status === '待支付') && (
+                                                {order.itemType === 'PRODUCT' && order.status === '待联系' && (
                                                     <>
-                                                        {(order.status === '待支付') && (
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    checkPayment(order.id);
-                                                                }}
-                                                                disabled={loadingOrderId === order.id}
-                                                                className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded hover:bg-green-100 flex items-center"
-                                                                title="如果您已支付但状态未更新，请点击此按钮"
-                                                            >
-                                                                <RefreshCcw size={14} className={`mr-1 ${loadingOrderId === order.id ? 'animate-spin' : ''}`} /> 刷新状态
-                                                            </button>
-                                                        )}
-
-                                                        {order.status === '待联系' && (
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    checkPayment(order.id);
-                                                                }}
-                                                                disabled={loadingOrderId === order.id}
-                                                                className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded hover:bg-green-100 flex items-center"
-                                                                title="如果您已支付但状态未更新，请点击此按钮"
-                                                            >
-                                                                <RefreshCcw size={14} className={`mr-1 ${loadingOrderId === order.id ? 'animate-spin' : ''}`} /> 支付状态
-                                                            </button>
-                                                        )}
 
                                                         <button
                                                             onClick={async (e) => {

@@ -279,82 +279,22 @@ export async function POST(request: Request) {
                 }
             }
 
-            // [NEW] Initiate Payment
-            let payUrl = null;
-
-            // Only initiate payment for regular products for now (or GROUP if it has a cost > 0)
-            // The user said "when user clicks buy... redirect".
-            // We should try to create a payment order.
-
-            // Use the amount from the order (though PaymentService will force 0.01 for testing)
-            const orderCost = body.cost || 0;
-
-            if (orderCost > 0) {
-                // Import dynamically to avoid top-level issues if env not set? No, static import is fine.
-                const { PaymentService } = await import('@/lib/payment');
-                const paymentResult = await PaymentService.createPaymentOrder(
-                    data.id, // Use Order ID as orderNo
-                    orderCost,
-                    body.itemName || 'Shop Order'
-                );
-
-                if (paymentResult && paymentResult.success) {
-                    payUrl = paymentResult.payUrl;
-                } else {
-                    console.error('Failed to create payment order:', paymentResult?.msg);
-                    // We still return success: true for the local order, but maybe warn?
-                    // Or we should allow the user to 'Pay' later from the order list.
-                    // For now, let's just return the local order and if payUrl is missing, the frontend will show "Submitted".
-                }
-            }
-
+            // Payment Logic Removed for Stable Release
             return NextResponse.json({
                 success: true,
                 order: data,
                 migratedTo: migratedTo,
                 targetGroupId: targetGroupId,
-                payUrl: payUrl
+                payUrl: null
             });
         }
 
-        // [NEW] Initiate Payment for regular PRODUCT orders too
-        let payUrl = null;
-        const orderCost = body.cost || 0;
-        let paymentError = null;
-        console.log('[DEBUG] Order initiated. Type:', body.itemType, 'Cost:', orderCost);
+        // Generic Product Order Success (Payment Removed)
+        console.log('[DEBUG] Order created. Type:', body.itemType);
 
-        if (orderCost > 0) {
-            console.log('[DEBUG] Attempting payment creation for order:', data.id);
-            try {
-                const { PaymentService } = await import('@/lib/payment');
-                const paymentResult = await PaymentService.createPaymentOrder(
-                    data.id,
-                    orderCost,
-                    body.itemName || 'Product Order'
-                );
-                console.log('[DEBUG] Payment result:', paymentResult);
+        return NextResponse.json({ success: true, order: data, payUrl: null });
 
-                if (paymentResult && paymentResult.success) {
-                    payUrl = paymentResult.payUrl;
-                    // Update order with payUrl and set status to '待支付' (Pending Payment)
-                    await supabase.from('orders').update({
-                        status: '待支付',
-                        pay_url: payUrl,
-                        notes: `[Payment] 支付链接已生成`
-                    }).eq('id', data.id);
-                } else {
-                    console.error('[DEBUG] Payment creation failed:', paymentResult);
-                    paymentError = paymentResult?.msg || 'Payment failed';
-                }
-            } catch (err) {
-                console.error('[DEBUG] Payment import/exec error:', err);
-                paymentError = 'Internal Server Error during payment';
-            }
-        } else {
-            console.log('[DEBUG] Cost is 0 or less, skipping payment.');
-        }
 
-        return NextResponse.json({ success: true, order: data, payUrl: payUrl, paymentError });
     } catch (error) {
         console.error('Error creating order:', error);
         return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
