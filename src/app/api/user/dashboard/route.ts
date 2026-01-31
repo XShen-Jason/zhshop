@@ -81,14 +81,16 @@ export async function GET() {
             email: profileData.email || user.email || '',
             role: profileData.role || 'USER',
             points: profileData.points || 0,
-            checkInStreak: profileData.check_in_streak || 0
+            checkInStreak: profileData.check_in_streak || 0,
+            savedContacts: profileData.saved_contacts || []
         } : {
             id: user.id,
             name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
             email: user.email || '',
             role: 'USER',
             points: 0,
-            checkInStreak: 0
+            checkInStreak: 0,
+            savedContacts: []
         };
 
         // Transform orders

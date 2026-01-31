@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { User as UserIcon, Gift, ShoppingBag, Clock, ChevronRight, LogOut, Award, Calendar, Coins, Trophy, ArrowRight, TrendingUp, TrendingDown, Users, Edit2, X } from 'lucide-react';
+import { User as UserIcon, Gift, ShoppingBag, Clock, ChevronRight, LogOut, Calendar, Coins, Trophy, ArrowRight, Users, Edit2, X } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ModifyParticipationModal } from '@/components/ModifyParticipationModal';
 import { ContactEditModal } from '@/components/ContactEditModal';
 import { ModifyOrderModal } from '@/components/ModifyOrderModal';
+import { ProfileSettings } from '@/components/ProfileSettings';
 import { createClient } from '@/lib/supabase/client';
 import { Order } from '@/types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -20,6 +21,7 @@ interface UserProfile {
     role: string;
     points: number;
     checkInStreak: number;
+    savedContacts: { type: string; value: string; label?: string }[];
 }
 
 interface LotteryEntry {
@@ -63,7 +65,7 @@ export default function UserPage() {
     const [lotteries, setLotteries] = useState<LotteryEntry[]>([]);
     const [groups, setGroups] = useState<GroupEntry[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'orders' | 'lotteries' | 'groups'>('orders');
+    const [activeTab, setActiveTab] = useState<'orders' | 'lotteries' | 'groups' | 'contacts'>('orders');
     const [actionLoading, setActionLoading] = useState(false);
     const [editingGroup, setEditingGroup] = useState<GroupEntry | null>(null);
     const [editingContact, setEditingContact] = useState<{
@@ -74,8 +76,18 @@ export default function UserPage() {
     } | null>(null);
     const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
+
+    const searchParams = useSearchParams();
+
     // Prevent duplicate fetches (React StrictMode, fast re-renders)
     const fetchingRef = useRef(false);
+
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab === 'contacts') {
+            setActiveTab('contacts');
+        }
+    }, [searchParams]);
 
     const fetchData = useCallback(async () => {
         if (fetchingRef.current) return;
@@ -212,10 +224,10 @@ export default function UserPage() {
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex space-x-2 mb-6">
+            <div className="flex space-x-2 mb-6 overflow-x-auto pb-2 md:pb-0">
                 <button
                     onClick={() => setActiveTab('orders')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'orders'
+                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'orders'
                         ? 'bg-indigo-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -225,7 +237,7 @@ export default function UserPage() {
                 </button>
                 <button
                     onClick={() => setActiveTab('groups')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'groups'
+                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'groups'
                         ? 'bg-indigo-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -235,7 +247,7 @@ export default function UserPage() {
                 </button>
                 <button
                     onClick={() => setActiveTab('lotteries')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'lotteries'
+                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'lotteries'
                         ? 'bg-pink-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -243,260 +255,105 @@ export default function UserPage() {
                     <Gift size={16} className="inline mr-2" />
                     抽奖记录
                 </button>
+                <button
+                    onClick={() => setActiveTab('contacts')}
+                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'contacts'
+                        ? 'bg-teal-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                >
+                    <UserIcon size={16} className="inline mr-2" />
+                    个人信息
+                </button>
             </div>
 
+            {/* Profile Settings Tab */}
+            {
+                activeTab === 'contacts' && (
+                    <ProfileSettings
+                        initialContacts={profile.savedContacts || []}
+                        userEmail={profile.email}
+                        onUpdate={fetchData}
+                    />
+                )
+            }
+
             {/* Orders Tab */}
-            {activeTab === 'orders' && (
-                <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-                    <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                        <h3 className="font-bold text-xl text-gray-800">订单记录</h3>
-                    </div>
-                    {orders.length === 0 ? (
-                        <div className="p-16 text-center text-gray-400 flex flex-col items-center">
-                            <ShoppingBag size={48} className="mb-4 opacity-20" />
-                            <p>暂无订单记录</p>
-                            <Link href="/products" className="mt-4 text-indigo-600 font-medium hover:underline">
-                                去选购商品 →
-                            </Link>
+            {
+                activeTab === 'orders' && (
+                    <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                            <h3 className="font-bold text-xl text-gray-800">订单记录</h3>
                         </div>
-                    ) : (
-                        <div className="divide-y divide-gray-50">
-                            {orders.map(order => {
-                                const detailLink = order.itemType === 'PRODUCT' ? `/products/${order.itemId}` :
-                                    order.itemType === 'GROUP' ? `/groups/${order.itemId}` : null;
-                                const content = (
-                                    <div className="p-6 md:p-8 hover:bg-gray-50/80 transition flex flex-col md:flex-row justify-between items-start md:items-center group">
-                                        <div className="mb-4 md:mb-0">
-                                            <div className="flex items-center mb-2">
-                                                <h4 className="font-bold text-lg text-gray-900 mr-3 group-hover:text-indigo-600 transition-colors">{order.itemName}</h4>
-                                                <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">{
-                                                    order.itemType === 'PRODUCT' ? '商品' :
-                                                        order.itemType === 'GROUP' ? '拼车' : '抽奖'
-                                                }</span>
-                                            </div>
-                                            <div className="text-sm text-gray-500 flex items-center space-x-4">
-                                                <span className="flex items-center"><Clock size={14} className="mr-1.5" /> {order.createdAt?.split('T')[0]}</span>
-                                                {order.quantity && order.quantity > 1 && (
-                                                    <>
-                                                        <span className="text-gray-300">|</span>
-                                                        <span className="font-medium text-gray-600">× {order.quantity}</span>
-                                                    </>
-                                                )}
-                                                {order.cost && (
-                                                    <>
-                                                        <span className="text-gray-300">|</span>
-                                                        <span className="font-bold text-gray-700">
-                                                            {order.cost} {order.currency === 'POINTS' ? '积分' : '$'}
-                                                        </span>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
-                                            {/* Show modify/cancel buttons only for PRODUCT orders with 待联系 status */}
-                                            {order.itemType === 'PRODUCT' && order.status === '待联系' && (
-                                                <>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            setEditingOrder(order);
-                                                        }}
-                                                        className="px-3 py-1.5 text-sm bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 flex items-center"
-                                                    >
-                                                        <Edit2 size={14} className="mr-1" /> 修改
-                                                    </button>
-                                                    <button
-                                                        onClick={async (e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            if (!confirm('确定取消此订单吗？')) return;
-                                                            setActionLoading(true);
-                                                            try {
-                                                                const res = await fetch('/api/orders', {
-                                                                    method: 'DELETE',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ id: order.id })
-                                                                });
-                                                                if (res.ok) {
-                                                                    alert('订单已取消');
-                                                                    window.location.reload();
-                                                                } else {
-                                                                    const err = await res.json();
-                                                                    alert(err.error || '取消失败');
-                                                                }
-                                                            } catch { alert('网络错误'); }
-                                                            setActionLoading(false);
-                                                        }}
-                                                        disabled={actionLoading}
-                                                        className="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 flex items-center"
-                                                    >
-                                                        <X size={14} className="mr-1" /> 取消
-                                                    </button>
-                                                </>
-                                            )}
-                                            {/* Show contact edit button for non-product or non-pending orders */}
-                                            {(order.itemType !== 'PRODUCT' || order.status !== '待联系') && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setEditingContact({
-                                                            type: 'order',
-                                                            id: order.id,
-                                                            title: order.itemName,
-                                                            contact: order.contactDetails || ''
-                                                        });
-                                                    }}
-                                                    className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition"
-                                                    title="修改联系方式"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                            )}
-                                            <Badge status={order.status} />
-                                            {detailLink && <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600" />}
-                                        </div>
-                                    </div>
-                                );
-                                return detailLink ? (
-                                    <Link key={order.id} href={detailLink} className="block">
-                                        {content}
-                                    </Link>
-                                ) : (
-                                    <div key={order.id}>{content}</div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Lotteries Tab */}
-            {activeTab === 'lotteries' && (
-                <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-                    <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                        <h3 className="font-bold text-xl text-gray-800">抽奖记录</h3>
-                    </div>
-                    {lotteries.length === 0 ? (
-                        <div className="p-16 text-center text-gray-400 flex flex-col items-center">
-                            <Gift size={48} className="mb-4 opacity-20" />
-                            <p>暂无抽奖记录</p>
-                            <Link href="/lottery" className="mt-4 text-pink-600 font-medium hover:underline">
-                                去参与抽奖 →
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-gray-50">
-                            {lotteries.map(entry => (
-                                <Link
-                                    key={entry.id}
-                                    href={`/lottery/${entry.lotteryId}`}
-                                    className="p-6 md:p-8 hover:bg-gray-50/80 transition flex flex-col md:flex-row justify-between items-start md:items-center group block"
-                                >
-                                    <div className="mb-4 md:mb-0">
-                                        <div className="flex items-center mb-2">
-                                            <h4 className="font-bold text-lg text-gray-900 mr-3 group-hover:text-pink-600 transition-colors">
-                                                {entry.lottery?.title || '未知抽奖'}
-                                            </h4>
-                                            {entry.isWinner && (
-                                                <span className="text-xs font-bold bg-amber-100 text-amber-600 px-2 py-1 rounded flex items-center">
-                                                    <Trophy size={12} className="mr-1" /> 中奖
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="text-sm text-gray-500 flex items-center space-x-4">
-                                            <span className="flex items-center"><Clock size={14} className="mr-1.5" /> 参与: {entry.enteredAt?.split('T')[0]}</span>
-                                            <span className="text-gray-300">|</span>
-                                            <span className="flex items-center">
-                                                <Coins size={14} className="mr-1.5" /> -{entry.lottery?.entryCost} 积分
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
-                                        <Badge status={entry.lottery?.status || '未知'} />
-                                        <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600" />
-                                    </div>
+                        {orders.length === 0 ? (
+                            <div className="p-16 text-center text-gray-400 flex flex-col items-center">
+                                <ShoppingBag size={48} className="mb-4 opacity-20" />
+                                <p>暂无订单记录</p>
+                                <Link href="/products" className="mt-4 text-indigo-600 font-medium hover:underline">
+                                    去选购商品 →
                                 </Link>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Groups Tab */}
-            {activeTab === 'groups' && (
-                <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-                    <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                        <h3 className="font-bold text-xl text-gray-800">拼团记录</h3>
-                    </div>
-                    {groups.length === 0 ? (
-                        <div className="p-16 text-center text-gray-400 flex flex-col items-center">
-                            <Users size={48} className="mb-4 opacity-20" />
-                            <p>暂无拼团记录</p>
-                            <Link href="/groups" className="mt-4 text-indigo-600 font-medium hover:underline">
-                                去参与拼团 →
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-gray-50">
-                            {groups.map(entry => {
-                                const availableSlots = (entry.group?.targetCount ?? 0) - (entry.group?.currentCount ?? 0) + entry.quantity;
-                                const isActive = entry.group?.status === '进行中';
-
-                                return (
-                                    <div
-                                        key={entry.participationId}
-                                        className="p-6 md:p-8 hover:bg-gray-50/80 transition"
-                                    >
-                                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-                                            <Link href={`/groups/${entry.groupId}`} className="mb-4 md:mb-0 flex-1 group cursor-pointer">
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-50">
+                                {orders.map(order => {
+                                    const detailLink = order.itemType === 'PRODUCT' ? `/products/${order.itemId}` :
+                                        order.itemType === 'GROUP' ? `/groups/${order.itemId}` : null;
+                                    const content = (
+                                        <div className="p-6 md:p-8 hover:bg-gray-50/80 transition flex flex-col md:flex-row justify-between items-start md:items-center group">
+                                            <div className="mb-4 md:mb-0">
                                                 <div className="flex items-center mb-2">
-                                                    <h4 className="font-bold text-lg text-gray-900 mr-3 group-hover:text-indigo-600 transition-colors">
-                                                        {entry.group?.title || '未知拼团'}
-                                                    </h4>
-                                                    <Badge status={entry.group?.status || '未知'} />
+                                                    <h4 className="font-bold text-lg text-gray-900 mr-3 group-hover:text-indigo-600 transition-colors">{order.itemName}</h4>
+                                                    <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">{
+                                                        order.itemType === 'PRODUCT' ? '商品' :
+                                                            order.itemType === 'GROUP' ? '拼团' : '抽奖'
+                                                    }</span>
                                                 </div>
                                                 <div className="text-sm text-gray-500 flex items-center space-x-4">
-                                                    <span className="flex items-center"><Clock size={14} className="mr-1.5" /> 加入: {entry.joinedAt?.split('T')[0]}</span>
-                                                    <span className="text-gray-300">|</span>
-                                                    <span className="font-bold text-gray-700">
-                                                        ¥{entry.group?.price} × {entry.quantity} 份
-                                                    </span>
-                                                    <span className="text-gray-300">|</span>
-                                                    <span>进度: {entry.group?.currentCount}/{entry.group?.targetCount}</span>
+                                                    <span className="flex items-center"><Clock size={14} className="mr-1.5" /> {order.createdAt?.split('T')[0]}</span>
+                                                    {order.quantity && order.quantity > 1 && (
+                                                        <>
+                                                            <span className="text-gray-300">|</span>
+                                                            <span className="font-medium text-gray-600">× {order.quantity}</span>
+                                                        </>
+                                                    )}
+                                                    {order.cost && (
+                                                        <>
+                                                            <span className="text-gray-300">|</span>
+                                                            <span className="font-bold text-gray-700">
+                                                                {order.cost} {order.currency === 'POINTS' ? '积分' : '$'}
+                                                            </span>
+                                                        </>
+                                                    )}
                                                 </div>
-                                            </Link>
-                                            <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
-                                                {/* 只有已结束才不能修改，进行中和已锁单都可以修改 */}
-                                                {entry.group?.status !== '已结束' && (
+                                            </div>
+                                            <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
+                                                {/* Show modify/cancel buttons only for PRODUCT orders with 待联系 status */}
+                                                {order.itemType === 'PRODUCT' && order.status === '待联系' && (
                                                     <>
                                                         <button
                                                             onClick={(e) => {
+                                                                e.preventDefault();
                                                                 e.stopPropagation();
-                                                                setEditingGroup(entry);
+                                                                setEditingOrder(order);
                                                             }}
-                                                            disabled={actionLoading}
-                                                            className={`px-3 py-1.5 text-sm rounded flex items-center ${entry.group?.status === '已锁单'
-                                                                ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                                                : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                                                                }`}
+                                                            className="px-3 py-1.5 text-sm bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 flex items-center"
                                                         >
-                                                            <Edit2 size={14} className="mr-1" /> 修改信息
+                                                            <Edit2 size={14} className="mr-1" /> 修改
                                                         </button>
                                                         <button
                                                             onClick={async (e) => {
+                                                                e.preventDefault();
                                                                 e.stopPropagation();
-                                                                if (!confirm('确定取消参与此拼团？您的名额将被释放。')) return;
+                                                                if (!confirm('确定取消此订单吗？')) return;
                                                                 setActionLoading(true);
                                                                 try {
-                                                                    const res = await fetch('/api/user/groups', {
+                                                                    const res = await fetch('/api/orders', {
                                                                         method: 'DELETE',
                                                                         headers: { 'Content-Type': 'application/json' },
-                                                                        body: JSON.stringify({ groupId: entry.groupId })
+                                                                        body: JSON.stringify({ id: order.id })
                                                                     });
                                                                     if (res.ok) {
-                                                                        alert('已取消参与');
+                                                                        alert('订单已取消');
                                                                         window.location.reload();
                                                                     } else {
                                                                         const err = await res.json();
@@ -508,67 +365,255 @@ export default function UserPage() {
                                                             disabled={actionLoading}
                                                             className="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 flex items-center"
                                                         >
-                                                            <X size={14} className="mr-1" /> 取消参与
+                                                            <X size={14} className="mr-1" /> 取消
                                                         </button>
                                                     </>
                                                 )}
-                                                {entry.group?.status === '已结束' && (
-                                                    <span className="text-sm text-gray-400">团已结束，无法修改</span>
+                                                {/* Show contact edit button for non-product or non-pending orders */}
+                                                {(order.itemType !== 'PRODUCT' || order.status !== '待联系') && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setEditingContact({
+                                                                type: 'order',
+                                                                id: order.id,
+                                                                title: order.itemName,
+                                                                contact: order.contactDetails || ''
+                                                            });
+                                                        }}
+                                                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition"
+                                                        title="修改联系方式"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
                                                 )}
-                                                <ChevronRight size={20} className="text-gray-400" />
+                                                <Badge status={order.status} />
+                                                {detailLink && <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600" />}
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                    return detailLink ? (
+                                        <Link key={order.id} href={detailLink} className="block">
+                                            {content}
+                                        </Link>
+                                    ) : (
+                                        <div key={order.id}>{content}</div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )
+            }
+
+            {/* Lotteries Tab */}
+            {
+                activeTab === 'lotteries' && (
+                    <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                            <h3 className="font-bold text-xl text-gray-800">抽奖记录</h3>
                         </div>
-                    )}
-                </div>
-            )}
+                        {lotteries.length === 0 ? (
+                            <div className="p-16 text-center text-gray-400 flex flex-col items-center">
+                                <Gift size={48} className="mb-4 opacity-20" />
+                                <p>暂无抽奖记录</p>
+                                <Link href="/lottery" className="mt-4 text-pink-600 font-medium hover:underline">
+                                    去参与抽奖 →
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-50">
+                                {lotteries.map(entry => (
+                                    <Link
+                                        key={entry.id}
+                                        href={`/lottery/${entry.lotteryId}`}
+                                        className="p-6 md:p-8 hover:bg-gray-50/80 transition flex flex-col md:flex-row justify-between items-start md:items-center group block"
+                                    >
+                                        <div className="mb-4 md:mb-0">
+                                            <div className="flex items-center mb-2">
+                                                <h4 className="font-bold text-lg text-gray-900 mr-3 group-hover:text-pink-600 transition-colors">
+                                                    {entry.lottery?.title || '未知抽奖'}
+                                                </h4>
+                                                {entry.isWinner && (
+                                                    <span className="text-xs font-bold bg-amber-100 text-amber-600 px-2 py-1 rounded flex items-center">
+                                                        <Trophy size={12} className="mr-1" /> 中奖
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="text-sm text-gray-500 flex items-center space-x-4">
+                                                <span className="flex items-center"><Clock size={14} className="mr-1.5" /> 参与: {entry.enteredAt?.split('T')[0]}</span>
+                                                <span className="text-gray-300">|</span>
+                                                <span className="flex items-center">
+                                                    <Coins size={14} className="mr-1.5" /> -{entry.lottery?.entryCost} 积分
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
+                                            <Badge status={entry.lottery?.status || '未知'} />
+                                            <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600" />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )
+            }
+
+            {/* Groups Tab */}
+            {
+                activeTab === 'groups' && (
+                    <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                            <h3 className="font-bold text-xl text-gray-800">拼团记录</h3>
+                        </div>
+                        {groups.length === 0 ? (
+                            <div className="p-16 text-center text-gray-400 flex flex-col items-center">
+                                <Users size={48} className="mb-4 opacity-20" />
+                                <p>暂无拼团记录</p>
+                                <Link href="/groups" className="mt-4 text-indigo-600 font-medium hover:underline">
+                                    去参与拼团 →
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-50">
+                                {groups.map(entry => {
+                                    const availableSlots = (entry.group?.targetCount ?? 0) - (entry.group?.currentCount ?? 0) + entry.quantity;
+                                    const isActive = entry.group?.status === '进行中';
+
+                                    return (
+                                        <div
+                                            key={entry.participationId}
+                                            className="p-6 md:p-8 hover:bg-gray-50/80 transition"
+                                        >
+                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                                                <Link href={`/groups/${entry.groupId}`} className="mb-4 md:mb-0 flex-1 group cursor-pointer">
+                                                    <div className="flex items-center mb-2">
+                                                        <h4 className="font-bold text-lg text-gray-900 mr-3 group-hover:text-indigo-600 transition-colors">
+                                                            {entry.group?.title || '未知拼团'}
+                                                        </h4>
+                                                        <Badge status={entry.group?.status || '未知'} />
+                                                    </div>
+                                                    <div className="text-sm text-gray-500 flex items-center space-x-4">
+                                                        <span className="flex items-center"><Clock size={14} className="mr-1.5" /> 加入: {entry.joinedAt?.split('T')[0]}</span>
+                                                        <span className="text-gray-300">|</span>
+                                                        <span className="font-bold text-gray-700">
+                                                            ¥{entry.group?.price} × {entry.quantity} 份
+                                                        </span>
+                                                        <span className="text-gray-300">|</span>
+                                                        <span>进度: {entry.group?.currentCount}/{entry.group?.targetCount}</span>
+                                                    </div>
+                                                </Link>
+                                                <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
+                                                    {/* 只有已结束才不能修改，进行中和已锁单都可以修改 */}
+                                                    {entry.group?.status !== '已结束' && (
+                                                        <>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setEditingGroup(entry);
+                                                                }}
+                                                                disabled={actionLoading}
+                                                                className={`px-3 py-1.5 text-sm rounded flex items-center ${entry.group?.status === '已锁单'
+                                                                    ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                                                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                                                    }`}
+                                                            >
+                                                                <Edit2 size={14} className="mr-1" /> 修改信息
+                                                            </button>
+                                                            <button
+                                                                onClick={async (e) => {
+                                                                    e.stopPropagation();
+                                                                    if (!confirm('确定取消参与此拼团？您的名额将被释放。')) return;
+                                                                    setActionLoading(true);
+                                                                    try {
+                                                                        const res = await fetch('/api/user/groups', {
+                                                                            method: 'DELETE',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ groupId: entry.groupId })
+                                                                        });
+                                                                        if (res.ok) {
+                                                                            alert('已取消参与');
+                                                                            window.location.reload();
+                                                                        } else {
+                                                                            const err = await res.json();
+                                                                            alert(err.error || '取消失败');
+                                                                        }
+                                                                    } catch { alert('网络错误'); }
+                                                                    setActionLoading(false);
+                                                                }}
+                                                                disabled={actionLoading}
+                                                                className="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 flex items-center"
+                                                            >
+                                                                <X size={14} className="mr-1" /> 取消参与
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {entry.group?.status === '已结束' && (
+                                                        <span className="text-sm text-gray-400">团已结束，无法修改</span>
+                                                    )}
+                                                    <ChevronRight size={20} className="text-gray-400" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )
+            }
 
             {/* Modify Group Participation Modal */}
-            {editingGroup && editingGroup.group && (
-                <ModifyParticipationModal
-                    isOpen={!!editingGroup}
-                    onClose={() => setEditingGroup(null)}
-                    groupId={editingGroup.groupId}
-                    groupTitle={editingGroup.group.title}
-                    groupPrice={editingGroup.group.price}
-                    targetCount={editingGroup.group.targetCount}
-                    currentCount={editingGroup.group.currentCount}
-                    userQuantity={editingGroup.quantity}
-                    userContactInfo={editingGroup.contactInfo}
-                    onSuccess={() => window.location.reload()}
-                    isNewParticipation={false}
-                />
-            )}
+            {
+                editingGroup && editingGroup.group && (
+                    <ModifyParticipationModal
+                        isOpen={!!editingGroup}
+                        onClose={() => setEditingGroup(null)}
+                        groupId={editingGroup.groupId}
+                        groupTitle={editingGroup.group.title}
+                        groupPrice={editingGroup.group.price}
+                        targetCount={editingGroup.group.targetCount}
+                        currentCount={editingGroup.group.currentCount}
+                        userQuantity={editingGroup.quantity}
+                        userContactInfo={editingGroup.contactInfo}
+                        onSuccess={() => window.location.reload()}
+                        isNewParticipation={false}
+                    />
+                )
+            }
 
             {/* Contact Edit Modal for Orders/Lottery */}
-            {editingContact && (
-                <ContactEditModal
-                    isOpen={!!editingContact}
-                    onClose={() => setEditingContact(null)}
-                    recordType={editingContact.type}
-                    recordId={editingContact.id}
-                    recordTitle={editingContact.title}
-                    currentContact={editingContact.contact}
-                    onSuccess={() => window.location.reload()}
-                />
-            )}
+            {
+                editingContact && (
+                    <ContactEditModal
+                        isOpen={!!editingContact}
+                        onClose={() => setEditingContact(null)}
+                        recordType={editingContact.type}
+                        recordId={editingContact.id}
+                        recordTitle={editingContact.title}
+                        currentContact={editingContact.contact}
+                        onSuccess={() => window.location.reload()}
+                    />
+                )
+            }
 
             {/* Modify Order Modal for Product Orders */}
-            {editingOrder && (
-                <ModifyOrderModal
-                    isOpen={!!editingOrder}
-                    onClose={() => setEditingOrder(null)}
-                    orderId={editingOrder.id}
-                    orderTitle={editingOrder.itemName}
-                    unitPrice={(editingOrder.cost || 0) / (editingOrder.quantity || 1)}
-                    currentQuantity={editingOrder.quantity || 1}
-                    currentContact={editingOrder.contactDetails || ''}
-                    onSuccess={() => window.location.reload()}
-                />
-            )}
-        </div>
+            {
+                editingOrder && (
+                    <ModifyOrderModal
+                        isOpen={!!editingOrder}
+                        onClose={() => setEditingOrder(null)}
+                        orderId={editingOrder.id}
+                        orderTitle={editingOrder.itemName}
+                        unitPrice={(editingOrder.cost || 0) / (editingOrder.quantity || 1)}
+                        currentQuantity={editingOrder.quantity || 1}
+                        currentContact={editingOrder.contactDetails || ''}
+                        onSuccess={() => window.location.reload()}
+                    />
+                )
+            }
+        </div >
     );
 }

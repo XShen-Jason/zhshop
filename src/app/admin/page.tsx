@@ -5,7 +5,8 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-    Users, ShoppingCart, Activity, AlertCircle, Check, X, Box, FileText, Plus, Edit, Trash2, Gift, Users2, Play, Eye, Repeat, List, Grid, Lock, Unlock, Archive, Copy
+    Plus, Edit, Trash2, ChevronDown, ChevronUp, Search, User, Package, List, Settings, Image as ImageIcon, Bell, Menu, X, Check, Lock, Unlock, Archive, LogOut, Download, MessageSquare, CheckCircle, XCircle, ArrowLeft, Users, Clock,
+    BarChart2, ShoppingCart, Activity, AlertCircle, Box, FileText, Gift, Users2, Play, Eye, Repeat, Copy, Grid
 } from 'lucide-react';
 import { Order, Product, Tutorial } from '@/types';
 import { createClient } from '@/lib/supabase/client';
@@ -51,6 +52,7 @@ interface Participant {
     joinedAt?: string;
     quantity: number;
     users?: { name: string; email?: string } | null;
+    savedContacts?: { type: string; value: string }[];
 }
 
 export default function AdminPage() {
@@ -256,6 +258,28 @@ export default function AdminPage() {
         } catch (e) { console.error(e); }
     };
 
+    const handleBatchRename = async (type: 'category' | 'subCategory', oldName: string, newName: string, parentCategory?: string) => {
+        if (!confirm(`确定将 "${oldName}" 重命名为 "${newName}" 吗？所有相关商品都将更新。`)) return;
+        try {
+            const res = await fetch('/api/categories', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ oldName, newName, type: 'products', scope: type, parentCategory })
+            });
+
+            if (res.ok) {
+                alert('重命名成功');
+                fetchProducts(true);
+            } else {
+                alert('重命名失败');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('网络错误');
+        }
+    };
+
+
     // Save Handlers
     const saveProduct = (e: React.FormEvent) => {
         e.preventDefault();
@@ -368,7 +392,7 @@ export default function AdminPage() {
             } else {
                 const { data, error } = await supabase
                     .from('lottery_entries')
-                    .select('user_id, entered_at, is_winner, users(email, name, contact_info)')
+                    .select('user_id, entered_at, is_winner, users(email, name, contact_info, saved_contacts)')
                     .eq('lottery_id', id);
                 if (error) throw error;
                 const list = data.map((d: any) => ({
@@ -378,7 +402,8 @@ export default function AdminPage() {
                     contact: d.users?.contact_info || d.users?.email || '-',
                     joinedAt: d.entered_at,
                     isWinner: d.is_winner,
-                    quantity: 1
+                    quantity: 1,
+                    savedContacts: d.users?.saved_contacts || []
                 }));
                 // Sort winners to the top
                 list.sort((a: any, b: any) => (b.isWinner ? 1 : 0) - (a.isWinner ? 1 : 0));
@@ -473,117 +498,215 @@ export default function AdminPage() {
         </div>
     );
 
+    const [showCancelledOrders, setShowCancelledOrders] = useState(false);
+
+    // Independent Filters for each column: { category: string, subCategory: string }
+    const [pendingFilter, setPendingFilter] = useState({ category: '全部', subCategory: '全部' });
+    const [contactedFilter, setContactedFilter] = useState({ category: '全部', subCategory: '全部' });
+    const [completedFilter, setCompletedFilter] = useState({ category: '全部', subCategory: '全部' });
+
     const renderOrders = () => {
-        const filteredOrders = orderFilter === '全部' ? orders : orders.filter(o => o.status === orderFilter);
+        // 1. Filter by Cancelled View
+        if (showCancelledOrders) {
+            const cancelledOrders = orders.filter(o => o.status === '已取消');
+            const OrderCard = ({ order }: { order: Order }) => (
+                <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-all text-sm group relative">
+                    <div className="flex justify-between items-start mb-2">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${order.itemType === 'PRODUCT' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                            {order.itemType === 'PRODUCT' ? '商品' : order.itemType === 'GROUP' ? '拼团' : '抽奖'}
+                        </span>
+                        <span className="text-gray-400 text-[10px]">{new Date(order.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="font-bold text-gray-800 mb-1 line-clamp-2">{order.itemName}</div>
+                    <div className="bg-gray-50 p-2 rounded mb-2 text-xs text-gray-600 break-all">
+                        {order.contactDetails}
+                    </div>
+                    {order.savedContacts && order.savedContacts.length > 0 && (
+                        <details className="mb-2 group/contacts">
+                            <summary className="text-[10px] text-indigo-600 cursor-pointer list-none flex items-center gap-1 opacity-80 hover:opacity-100">
+                                <span>备用联系方式 ({order.savedContacts.length})</span>
+                                <span className="group-open/contacts:rotate-180 transition-transform">▼</span>
+                            </summary>
+                            <div className="mt-1 space-y-1 pl-2 border-l-2 border-indigo-100 bg-indigo-50/30 p-1.5 rounded-r">
+                                {order.savedContacts.map((c: any, i: number) => (
+                                    <div key={i} className="text-[10px] text-gray-600 font-mono flex gap-1">
+                                        <span className="font-bold text-indigo-500 shrink-0">{c.label || c.type}:</span>
+                                        <span className="break-all">{c.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </details>
+                    )}
+                    <div className="flex gap-1 mt-2 border-t pt-2">
+                        <button onClick={() => updateOrderStatus(order.id, '待联系')} className="flex-1 bg-gray-100 text-gray-600 py-1 rounded hover:bg-gray-200">
+                            恢复订单
+                        </button>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="space-y-4 h-full flex flex-col">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex-shrink-0">
+                        <h3 className="text-lg font-bold flex items-center text-red-600"><XCircle className="mr-2" />已取消订单 ({cancelledOrders.length})</h3>
+                        <button onClick={() => setShowCancelledOrders(false)} className="text-sm px-3 py-1.5 rounded-full bg-gray-800 text-white flex items-center gap-1 hover:bg-gray-700">
+                            <ArrowLeft size={14} /> 返回看板
+                        </button>
+                    </div>
+                    <div className="bg-white rounded-xl border border-gray-200 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto">
+                        {cancelledOrders.map(o => <OrderCard key={o.id} order={o} />)}
+                        {cancelledOrders.length === 0 && <div className="col-span-full text-center text-gray-400 py-10">无取消订单</div>}
+                    </div>
+                </div>
+            )
+        }
+
+        // Helper to filter a list by its specific filter state
+        const filterList = (list: Order[], filterState: { category: string, subCategory: string }) => {
+            let result = list;
+            if (filterState.category !== '全部') {
+                result = result.filter(o => {
+                    if (o.itemType !== 'PRODUCT') return false;
+                    const product = products.find(p => p.id === o.itemId);
+                    return product?.category === filterState.category;
+                });
+            }
+            if (filterState.subCategory !== '全部') {
+                result = result.filter(o => {
+                    const product = products.find(p => p.id === o.itemId);
+                    return product?.subCategory === filterState.subCategory;
+                });
+            }
+            return result;
+        };
+
+        const pendingOrders = filterList(orders.filter(o => o.status === '待联系'), pendingFilter);
+        const contactedOrders = filterList(orders.filter(o => o.status === '已联系'), contactedFilter);
+        const completedOrders = filterList(orders.filter(o => o.status === '已完成'), completedFilter);
+
+        const OrderCard = ({ order }: { order: Order }) => (
+            <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-all text-sm group relative">
+                <div className="flex justify-between items-start mb-2">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${order.itemType === 'PRODUCT' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                        {order.itemType === 'PRODUCT' ? '商品' : order.itemType === 'GROUP' ? '拼团' : '抽奖'}
+                    </span>
+                    <span className="text-gray-400 text-[10px]">{new Date(order.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="font-bold text-gray-800 mb-1 line-clamp-2">{order.itemName}</div>
+                {order.itemType === 'PRODUCT' && (
+                    <div className="text-[10px] text-gray-500 mb-2">
+                        {(() => {
+                            const p = products.find(prod => prod.id === order.itemId);
+                            return p ? `${p.category} ${p.subCategory ? `/ ${p.subCategory}` : ''}` : '';
+                        })()}
+                    </div>
+                )}
+                <div className="bg-gray-50 p-2 rounded mb-2 text-xs text-gray-600 break-all">
+                    {order.contactDetails}
+                </div>
+                {/* Backup Contacts */}
+                {order.savedContacts && order.savedContacts.length > 0 && (
+                    <details className="mb-2 group/contacts">
+                        <summary className="text-[10px] text-indigo-600 cursor-pointer list-none flex items-center gap-1 opacity-80 hover:opacity-100">
+                            <span>备用联系方式 ({order.savedContacts.length})</span>
+                            <span className="group-open/contacts:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div className="mt-1 space-y-1 pl-2 border-l-2 border-indigo-100 bg-indigo-50/30 p-1.5 rounded-r">
+                            {order.savedContacts.map((c: any, i: number) => (
+                                <div key={i} className="text-[10px] text-gray-600 font-mono flex gap-1">
+                                    <span className="font-bold text-indigo-500 shrink-0">{c.label || c.type}:</span>
+                                    <span className="break-all">{c.value}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </details>
+                )}
+
+                {order.quantity && order.quantity > 1 && <div className="text-xs font-bold text-amber-600 mb-2">数量: {order.quantity}</div>}
+
+                {/* Actions */}
+                <div className="flex gap-1 mt-2 border-t pt-2">
+                    {order.status !== '已取消' && (
+                        <>
+                            {/* Forward Action */}
+                            {order.status === '待联系' && (
+                                <button onClick={() => updateOrderStatus(order.id, '已联系')} className="flex-1 bg-blue-50 text-blue-600 py-1 rounded hover:bg-blue-100 flex items-center justify-center gap-1">
+                                    <MessageSquare size={12} /> 联系
+                                </button>
+                            )}
+                            {order.status === '已联系' && (
+                                <button onClick={() => updateOrderStatus(order.id, '已完成')} className="flex-1 bg-green-50 text-green-600 py-1 rounded hover:bg-green-100 flex items-center justify-center gap-1">
+                                    <CheckCircle size={12} /> 完成
+                                </button>
+                            )}
+                            {/* Cancel Action */}
+                            {order.status !== '已完成' && (
+                                <button onClick={() => updateOrderStatus(order.id, '已取消')} className="px-2 text-gray-400 hover:text-red-500" title="取消订单">
+                                    <XCircle size={14} />
+                                </button>
+                            )}
+                            {/* Backward Action for Completed */}
+                            {order.status === '已完成' && (
+                                <span className="w-full text-center text-green-600 text-xs py-1">✓ 交易完成</span>
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+        );
 
         return (
-            <div className="space-y-6">
-                {/* Status Filter Tabs */}
-                <div className="flex gap-2 flex-wrap bg-white p-2 rounded-lg shadow-sm w-fit">
-                    {orderStatuses.map(status => (
-                        <button
-                            key={status}
-                            onClick={() => setOrderFilter(status)}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${orderFilter === status ? 'bg-indigo-600 text-white shadow' : 'text-gray-600 hover:bg-gray-100'}`}
-                        >
-                            {status}
-                            <span className="ml-2 text-xs opacity-80 bg-white/20 px-1.5 py-0.5 rounded-full">
-                                {status === '全部' ? orders.length : orders.filter(o => o.status === status).length}
-                            </span>
-                        </button>
-                    ))}
+            <div className="space-y-4 h-full flex flex-col">
+                <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex-shrink-0">
+                    <h3 className="text-lg font-bold flex items-center">订单管理 (看板)</h3>
+                    <button onClick={() => setShowCancelledOrders(true)} className="text-sm px-3 py-1.5 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 flex items-center gap-1">
+                        <Trash2 size={14} /> 查看已取消
+                    </button>
                 </div>
 
-                <div className="grid gap-4">
-                    {filteredOrders.length === 0 ? (
-                        <div className="text-center py-12 bg-white rounded-xl border border-dashed text-gray-400">
-                            <ShoppingCart size={48} className="mx-auto mb-2 opacity-20" />
-                            暂无订单
-                        </div>
-                    ) : (
-                        filteredOrders.map(o => (
-                            <div key={o.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col md:flex-row justify-between gap-6">
-                                <div className="flex-1 space-y-3">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className={`text-xs px-2 py-0.5 rounded border ${o.itemType === 'PRODUCT' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-purple-50 border-purple-100 text-purple-600'}`}>
-                                                    {o.itemType}
-                                                </span>
-                                                <span className="text-xs text-gray-400">{formatBeijing(o.createdAt, 'yyyy-MM-dd HH:mm')}</span>
-                                            </div>
-                                            <h4 className="font-bold text-lg text-gray-900">{o.itemName}</h4>
-                                        </div>
-                                        <div className={`px-3 py-1 rounded-full text-sm font-bold ${o.status === '已完成' ? 'bg-green-100 text-green-700' :
-                                            o.status === '已取消' ? 'bg-red-100 text-red-700' :
-                                                o.status === '已联系' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-amber-100 text-amber-700 animate-pulse'
-                                            }`}>
-                                            {o.status}
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                                        <div>
-                                            <span className="block text-xs text-gray-400 mb-1">数量</span>
-                                            <span className="font-bold">x {o.quantity || 1}</span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-xs text-gray-400 mb-1">总价</span>
-                                            <span className="font-bold text-indigo-600">¥{o.cost || 0}</span>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <span className="block text-xs text-gray-400 mb-1">联系方式</span>
-                                            <span className="font-mono">{o.contactDetails || '-'}</span>
-                                        </div>
-                                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 min-h-0">
+                    {/* Column Renderer Helper */}
+                    {[
+                        { title: '待联系', icon: Clock, color: 'blue', list: pendingOrders, filter: pendingFilter, setFilter: setPendingFilter },
+                        { title: '已联系', icon: MessageSquare, color: 'purple', list: contactedOrders, filter: contactedFilter, setFilter: setContactedFilter },
+                        { title: '已完成', icon: CheckCircle, color: 'green', list: completedOrders, filter: completedFilter, setFilter: setCompletedFilter }
+                    ].map((col, idx) => (
+                        <div key={idx} className={`flex flex-col bg-${col.color}-50/50 rounded-xl border border-${col.color}-100 h-full overflow-hidden`}>
+                            <div className={`p-3 bg-${col.color}-100/50 border-b border-${col.color}-100 space-y-2`}>
+                                <div className="flex justify-between items-center">
+                                    <span className={`font-bold text-${col.color}-800 flex items-center`}><col.icon size={16} className="mr-2" /> {col.title}</span>
+                                    <span className={`bg-white text-${col.color}-600 text-xs px-2 py-0.5 rounded-full shadow-sm font-bold`}>{col.list.length}</span>
                                 </div>
-
-                                <div className="flex md:flex-col justify-end gap-2 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 min-w-[120px]">
-                                    {/* Action Buttons - Only show if not terminal state */}
-                                    {o.status !== '已完成' && o.status !== '已取消' && (
-                                        <>
-                                            {o.status === '待联系' && (
-                                                <button
-                                                    onClick={() => updateOrderStatus(o.id, '已联系')}
-                                                    className="w-full py-2 px-3 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100 flex items-center justify-center transition-colors"
-                                                >
-                                                    <Activity size={16} className="mr-2" /> 标记已联系
-                                                </button>
-                                            )}
-
-                                            <button
-                                                onClick={() => {
-                                                    if (confirm('确认将订单标记为已完成？此操作不可撤销。')) {
-                                                        updateOrderStatus(o.id, '已完成');
-                                                    }
-                                                }}
-                                                className="w-full py-2 px-3 text-sm bg-green-50 text-green-700 rounded hover:bg-green-100 flex items-center justify-center transition-colors"
-                                            >
-                                                <Check size={16} className="mr-2" /> 完成订单
-                                            </button>
-
-                                            <button
-                                                onClick={() => {
-                                                    if (confirm('确认取消此订单？此操作不可撤销。')) {
-                                                        updateOrderStatus(o.id, '已取消');
-                                                    }
-                                                }}
-                                                className="w-full py-2 px-3 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100 flex items-center justify-center transition-colors"
-                                            >
-                                                <X size={16} className="mr-2" /> 取消订单
-                                            </button>
-                                        </>
-                                    )}
-                                    {(o.status === '已完成' || o.status === '已取消') && (
-                                        <div className="text-center text-gray-400 text-sm py-2">
-                                            订单归档
-                                        </div>
+                                {/* Column Specific Filter */}
+                                <div className="flex gap-1">
+                                    <select
+                                        value={col.filter.category}
+                                        onChange={e => col.setFilter({ category: e.target.value, subCategory: '全部' })}
+                                        className="text-[10px] w-full border-gray-200 rounded shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-1"
+                                    >
+                                        <option value="全部">全部分类</option>
+                                        {categoryStructure.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                                    </select>
+                                    {col.filter.category !== '全部' && (
+                                        <select
+                                            value={col.filter.subCategory}
+                                            onChange={e => col.setFilter({ ...col.filter, subCategory: e.target.value })}
+                                            className="text-[10px] w-full border-gray-200 rounded shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-1 animate-fade-in"
+                                        >
+                                            <option value="全部">全部子类</option>
+                                            {categoryStructure.find(c => c.name === col.filter.category)?.subCategories.map(sub => (
+                                                <option key={sub} value={sub}>{sub}</option>
+                                            ))}
+                                        </select>
                                     )}
                                 </div>
                             </div>
-                        ))
-                    )}
+                            <div className={`p-3 overflow-y-auto space-y-3 flex-1 scrollbar-thin scrollbar-thumb-${col.color}-200`}>
+                                {col.list.map(o => <OrderCard key={o.id} order={o} />)}
+                                {col.list.length === 0 && <div className={`text-center text-${col.color}-300 py-8 text-sm`}>无相关订单</div>}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         );
@@ -657,66 +780,151 @@ export default function AdminPage() {
 
     const renderGroups = () => {
         const activeGroups = groups.filter(g => g.status === '进行中');
-        const lockedGroups = groups.filter(g => g.status === '已锁单');
+        const lockedGroups = groups.filter(g => g.status === '已锁单'); // Use '已锁单' as Locked
         const endedGroups = groups.filter(g => g.status === '已结束');
 
+        const GroupCard = ({ group }: { group: GroupBuy }) => (
+            <div key={group.id} className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow relative group">
+                <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold text-gray-800 line-clamp-1">{group.title}</h4>
+                    <button onClick={() => { setEditingGroup(group); setShowGroupModal(true); }} className="text-gray-400 hover:text-indigo-600"><Edit size={14} /></button>
+                </div>
+                <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
+                    <span>¥{group.price}</span>
+                    <span className={`${group.currentCount >= group.targetCount ? 'text-red-500' : 'text-green-500'}`}>
+                        {group.currentCount}/{group.targetCount}
+                    </span>
+                </div>
+                <div className="flex justify-between gap-1 mt-2">
+                    {group.status === '进行中' && (
+                        <button onClick={() => updateGroupStatus(group.id, '已锁单')} className="flex-1 bg-yellow-50 text-yellow-600 py-1 rounded text-xs hover:bg-yellow-100">
+                            锁单
+                        </button>
+                    )}
+                    {group.status === '已锁单' && (
+                        <>
+                            <button onClick={() => updateGroupStatus(group.id, '进行中')} className="flex-1 bg-green-50 text-green-600 py-1 rounded text-xs hover:bg-green-100">
+                                恢复
+                            </button>
+                            <button onClick={() => updateGroupStatus(group.id, '已结束')} className="flex-1 bg-gray-100 text-gray-600 py-1 rounded text-xs hover:bg-gray-200">
+                                结束
+                            </button>
+                        </>
+                    )}
+                    <button onClick={() => handleDelete('/api/groups', group.id, fetchGroups)} className="px-2 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                </div>
+                <button onClick={() => viewParticipants('GROUP', group.id)} className="w-full mt-2 text-xs text-center text-indigo-500 bg-indigo-50 py-1 rounded hover:bg-indigo-100">
+                    查看成员 ({group.currentCount})
+                </button>
+            </div>
+        );
+
         return (
-            <div className="space-y-8">
+            <div className="space-y-4">
                 <div className="flex justify-between items-center">
                     <h3 className="text-lg font-bold">拼团管理</h3>
-                    <button onClick={() => { setEditingGroup({}); setShowGroupModal(true) }} className="bg-indigo-600 text-white px-3 py-1.5 rounded flex items-center text-sm shadow-sm hover:bg-indigo-700 transition-colors">
-                        <Plus size={16} className="mr-1" /> 发起新团
-                    </button>
+                    <button onClick={() => { setEditingGroup({}); setShowGroupModal(true) }} className="bg-green-600 text-white px-3 py-1.5 rounded text-sm flex items-center hover:bg-green-700 transition-colors"><Plus size={16} className="mr-1" />新增拼团</button>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Active */}
+                    <div className="bg-gray-50 rounded-xl p-4 min-h-[500px]">
+                        <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-bold text-green-700 flex items-center"><Users size={18} className="mr-2" />进行中</h4>
+                            <span className="bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded-full">{activeGroups.length}</span>
+                        </div>
+                        <div className="space-y-3">
+                            {activeGroups.map(g => <GroupCard key={g.id} group={g} />)}
+                        </div>
+                    </div>
 
-                {renderGroupSection('进行中', activeGroups, <Unlock size={18} className="text-green-600" />, 'ACTIVE')}
-                {renderGroupSection('已锁单 (需处理)', lockedGroups, <Lock size={18} className="text-amber-600" />, 'LOCKED')}
-                {renderGroupSection('历史记录', endedGroups, <Archive size={18} className="text-gray-400" />, 'ENDED')}
+                    {/* Locked */}
+                    <div className="bg-gray-50 rounded-xl p-4 min-h-[500px]">
+                        <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-bold text-amber-700 flex items-center"><Lock size={18} className="mr-2" />已锁单</h4>
+                            <span className="bg-amber-200 text-amber-800 text-xs px-2 py-0.5 rounded-full">{lockedGroups.length}</span>
+                        </div>
+                        <div className="space-y-3">
+                            {lockedGroups.map(g => <GroupCard key={g.id} group={g} />)}
+                        </div>
+                    </div>
+
+                    {/* History */}
+                    <div className="bg-gray-50 rounded-xl p-4 min-h-[500px]">
+                        <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-bold text-gray-600 flex items-center"><Clock size={18} className="mr-2" />历史拼团</h4>
+                            <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-full">{endedGroups.length}</span>
+                        </div>
+                        <div className="space-y-3">
+                            {endedGroups.map(g => <GroupCard key={g.id} group={g} />)}
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     };
 
     const renderLotteries = () => {
-        // Sort: 待开奖 first, then by draw date ascending
-        const sortedLotteries = [...lotteries].sort((a, b) => {
-            if (a.status === '待开奖' && b.status !== '待开奖') return -1;
-            if (a.status !== '待开奖' && b.status === '待开奖') return 1;
-            return new Date(a.drawDate).getTime() - new Date(b.drawDate).getTime();
-        });
+        const pendingLotteries = lotteries.filter(l => l.status === '待开奖');
+        const endedLotteries = lotteries.filter(l => l.status !== '待开奖').sort((a, b) => new Date(b.drawDate).getTime() - new Date(a.drawDate).getTime());
+
+        const renderLotteryTable = (items: Lottery[], isPending: boolean) => (
+            <div className="bg-white rounded shadow text-sm overflow-hidden border border-gray-200">
+                <table className="w-full text-left">
+                    <thead className="bg-gray-50"><tr><th className="p-3">标题</th><th className="p-3">日期</th><th className="p-3">人数</th><th className="p-3">操作</th></tr></thead>
+                    <tbody className="divide-y">
+                        {items.length === 0 ? (
+                            <tr><td colSpan={4} className="p-4 text-center text-gray-400">暂无数据</td></tr>
+                        ) : (
+                            items.map(l => (
+                                <tr key={l.id} className={isPending ? 'bg-amber-50/30' : ''}>
+                                    <td className="p-3">
+                                        <div className="font-medium line-clamp-1" title={l.title}>{l.title}</div>
+                                        <div className="text-xs text-gray-400 mt-0.5">
+                                            {isPending ? (
+                                                <span className="text-amber-600 bg-amber-50 px-1 rounded">待开奖</span>
+                                            ) : (
+                                                <span className="bg-gray-100 px-1 rounded">{l.status}</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-3 text-xs">
+                                        {formatBeijing(l.drawDate, 'MM-dd')}
+                                        <span className="text-gray-400 block">{formatBeijing(l.drawDate, 'HH:mm')}</span>
+                                    </td>
+                                    <td className="p-3">
+                                        {l.participants}
+                                        <button onClick={() => viewParticipants('LOTTERY', l.id)} className="ml-1 text-xs text-indigo-600 hover:underline">名单</button>
+                                    </td>
+                                    <td className="p-3 flex gap-1">
+                                        {isPending && (
+                                            <button onClick={() => executeDraw(l.id)} className="text-purple-600 hover:bg-purple-50 p-1 rounded" title="立即开奖"><Play size={14} /></button>
+                                        )}
+                                        <button onClick={() => { setEditingLottery({ ...l, drawDate: utcToBeijingInputString(l.drawDate), prizes: l.prizes.join('\n') } as any); setShowLotteryModal(true) }} className="text-blue-600 hover:bg-blue-50 p-1 rounded" title="编辑"><Edit size={14} /></button>
+                                        <button onClick={() => handleDelete('/api/lottery', l.id, fetchLotteries)} className="text-red-600 hover:bg-red-50 p-1 rounded" title="删除"><Trash2 size={14} /></button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        );
 
         return (
             <div className="space-y-4">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                     <h3 className="text-lg font-bold">抽奖管理</h3>
                     <button onClick={() => { setEditingLottery({}); setShowLotteryModal(true) }} className="bg-indigo-600 text-white px-3 py-1.5 rounded flex items-center text-sm"><Plus size={16} className="mr-1" /> 发布抽奖</button>
                 </div>
-                <div className="bg-white rounded shadow text-sm">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50"><tr><th className="p-3">标题</th><th className="p-3">开奖日期</th><th className="p-3">参与</th><th className="p-3">状态</th><th className="p-3">操作</th></tr></thead>
-                        <tbody className="divide-y">
-                            {sortedLotteries.map(l => (
-                                <tr key={l.id} className={l.status === '待开奖' ? 'bg-amber-50/50' : ''}>
-                                    <td className="p-3">{l.title}</td>
-                                    <td className="p-3">
-                                        {formatBeijing(l.drawDate, 'yyyy-MM-dd')}
-                                        <span className="text-xs text-gray-400 block">{formatBeijing(l.drawDate, 'HH:mm')}</span>
-                                    </td>
-                                    <td className="p-3">
-                                        {l.participants} 人
-                                        <button onClick={() => viewParticipants('LOTTERY', l.id)} className="ml-2 text-xs text-indigo-600 hover:underline">名单</button>
-                                    </td>
-                                    <td className="p-3"><span className={`px-2 py-0.5 rounded text-xs ${l.status === '待开奖' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>{l.status}</span></td>
-                                    <td className="p-3 flex gap-2">
-                                        {l.status === '待开奖' && (
-                                            <button onClick={() => executeDraw(l.id)} className="text-purple-600" title="立即开奖"><Play size={16} /></button>
-                                        )}
-                                        <button onClick={() => { setEditingLottery({ ...l, drawDate: utcToBeijingInputString(l.drawDate), prizes: l.prizes.join('\n') } as any); setShowLotteryModal(true) }} className="text-blue-600" title="编辑"><Edit size={16} /></button>
-                                        <button onClick={() => handleDelete('/api/lottery', l.id, fetchLotteries)} className="text-red-600" title="删除"><Trash2 size={16} /></button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <h4 className="font-bold text-amber-600 flex items-center"><Clock size={16} className="mr-2" /> 待开奖 ({pendingLotteries.length})</h4>
+                        {renderLotteryTable(pendingLotteries, true)}
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="font-bold text-gray-600 flex items-center"><Archive size={16} className="mr-2" /> 历史记录 ({endedLotteries.length})</h4>
+                        {renderLotteryTable(endedLotteries, false)}
+                    </div>
                 </div>
             </div>
         );
@@ -724,8 +932,26 @@ export default function AdminPage() {
 
     // Products and Tutorials Renderers
     const [productFilter, setProductFilter] = useState('全部');
-    const productCategories = ['全部', ...Array.from(new Set(products.map(p => p.category)))];
-    const filteredProducts = productFilter === '全部' ? products : products.filter(p => p.category === productFilter);
+    const [productSubFilter, setProductSubFilter] = useState('全部');
+
+    // Derive category structure
+    const categoryStructure = React.useMemo(() => {
+        const structure: Record<string, Set<string>> = {};
+        products.forEach(p => {
+            if (!structure[p.category]) structure[p.category] = new Set();
+            if (p.subCategory) structure[p.category].add(p.subCategory);
+        });
+        return Object.entries(structure).map(([name, subs]) => ({
+            name,
+            subCategories: Array.from(subs)
+        }));
+    }, [products]);
+
+    const filteredProducts = products.filter(p => {
+        if (productFilter !== '全部' && p.category !== productFilter) return false;
+        if (productSubFilter !== '全部' && p.subCategory !== productSubFilter) return false;
+        return true;
+    });
 
     const renderProducts = () => (
         <div className="space-y-4">
@@ -734,50 +960,99 @@ export default function AdminPage() {
                 <button onClick={() => { setEditingProduct({}); setShowProductModal(true) }} className="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center hover:bg-indigo-700 transition-colors"><Plus size={16} className="mr-1" />新增</button>
             </div>
 
-            {/* Category Filter */}
-            <div className="flex gap-2 flex-wrap items-center">
-                {productCategories.map(cat => (
-                    <button
-                        key={cat}
-                        onClick={() => setProductFilter(cat)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${productFilter === cat ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            {/* Enhanced Category Filter */}
+            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-wrap gap-4 items-center">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-500">一级分类:</span>
+                    <select
+                        value={productFilter}
+                        onChange={e => { setProductFilter(e.target.value); setProductSubFilter('全部'); }}
+                        className="text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-1"
                     >
-                        {cat}
-                        {cat !== '全部' && <span className="ml-1 opacity-70">({products.filter(p => p.category === cat).length})</span>}
-                    </button>
-                ))}
+                        <option value="全部">全部</option>
+                        {categoryStructure.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                    </select>
+                </div>
 
-                <button
-                    onClick={() => setShowCategoryModal(true)}
-                    className="ml-auto text-xs text-indigo-600 hover:text-indigo-800 underline flex items-center"
-                >
-                    <List size={14} className="mr-1" /> 管理分类
-                </button>
+                {productFilter !== '全部' && (
+                    <div className="flex items-center gap-2 animate-fade-in">
+                        <span className="text-xs font-bold text-gray-500">二级分类:</span>
+                        <select
+                            value={productSubFilter}
+                            onChange={e => setProductSubFilter(e.target.value)}
+                            className="text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-1"
+                        >
+                            <option value="全部">全部子类</option>
+                            {categoryStructure.find(c => c.name === productFilter)?.subCategories.map(sub => (
+                                <option key={sub} value={sub}>{sub}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                <div className="ml-auto flex items-center gap-2">
+                    <span className="text-xs text-gray-400">共 {filteredProducts.length} 个商品</span>
+                    <button
+                        onClick={() => setShowCategoryModal(true)}
+                        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full flex items-center transition-colors"
+                    >
+                        <List size={14} className="mr-1" /> 分类管理
+                    </button>
+                </div>
             </div>
 
-            {/* Category Management Modal */}
+            {/* Category Management Modal - Enhanced */}
             {showCategoryModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-                        <h3 className="text-lg font-bold mb-4">管理商品分类</h3>
-                        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                            {productCategories.filter(c => c !== '全部').map(cat => (
-                                <div key={cat} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group">
-                                    <span className="text-sm font-medium">{cat}</span>
-                                    <button
-                                        onClick={() => {
-                                            const newName = prompt('请输入新的分类名称:', cat);
-                                            if (newName && newName !== cat) handleCategoryRename(cat, newName);
-                                        }}
-                                        className="text-gray-400 hover:text-indigo-600 p-1"
-                                    >
-                                        <Edit size={14} />
-                                    </button>
+                    <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 max-h-[80vh] overflow-hidden flex flex-col">
+                        <h3 className="text-lg font-bold mb-4 flex items-center"><List size={20} className="mr-2 text-indigo-600" />分类管理</h3>
+                        <p className="text-xs text-gray-500 mb-4 bg-yellow-50 p-2 rounded border border-yellow-100">
+                            注意：修改分类名称会将所有属于该分类的商品同步更新。
+                        </p>
+                        <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+                            {categoryStructure.filter(c => c.name !== '全部').map(cat => (
+                                <div key={cat.name} className="border border-gray-100 rounded-lg overflow-hidden">
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 group">
+                                        <span className="text-sm font-bold text-gray-800">{cat.name}</span>
+                                        <button
+                                            onClick={() => {
+                                                const newName = prompt('重命名一级分类:', cat.name);
+                                                if (newName && newName !== cat.name) handleBatchRename('category', cat.name, newName);
+                                            }}
+                                            className="text-gray-400 hover:text-indigo-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="重命名一级分类"
+                                        >
+                                            <Edit size={14} />
+                                        </button>
+                                    </div>
+                                    <div className="p-3 bg-white">
+                                        {cat.subCategories.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {cat.subCategories.map(sub => (
+                                                    <div key={sub} className="flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs group/sub">
+                                                        {sub}
+                                                        <button
+                                                            onClick={() => {
+                                                                const newName = prompt('重命名二级分类:', sub);
+                                                                if (newName && newName !== sub) handleBatchRename('subCategory', sub, newName, cat.name);
+                                                            }}
+                                                            className="ml-2 text-blue-400 hover:text-blue-700"
+                                                            title="重命名二级分类"
+                                                        >
+                                                            <Edit size={10} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-gray-400 italic">无二级分类</span>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-6 flex justify-end">
-                            <button onClick={() => setShowCategoryModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">关闭</button>
+                        <div className="mt-6 flex justify-end pt-4 border-t">
+                            <button onClick={() => setShowCategoryModal(false)} className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">关闭</button>
                         </div>
                     </div>
                 </div>
@@ -795,7 +1070,7 @@ export default function AdminPage() {
                         </div>
                         <div className="flex justify-between items-center mb-3">
                             <span className="text-xl font-bold text-indigo-600">¥{p.price}</span>
-                            <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">{p.category}</span>
+                            <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full flex items-center">{p.category} {p.subCategory && <span className="text-blue-400 mx-1">/</span>} {p.subCategory}</span>
                         </div>
                         <div className="flex items-center justify-between mb-3 p-2 bg-gray-50 rounded-lg">
                             <span className="text-sm text-gray-600">库存数量</span>
@@ -869,9 +1144,37 @@ export default function AdminPage() {
                         <h3 className="text-lg font-bold mb-4">{editingProduct?.id ? '编辑' : '新增'}商品</h3>
                         <form onSubmit={saveProduct} className="space-y-3">
                             <div className="space-y-1"><label className="text-xs font-bold text-gray-500">商品标题</label><input required className="w-full border p-2 rounded" value={editingProduct?.title || ''} onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })} /></div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1"><label className="text-xs font-bold text-gray-500">价格 (¥)</label><input type="number" required className="w-full border p-2 rounded" value={editingProduct?.price || ''} onChange={e => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) })} /></div>
-                                <div className="space-y-1"><label className="text-xs font-bold text-gray-500">分类</label><input required className="w-full border p-2 rounded" value={editingProduct?.category || ''} onChange={e => setEditingProduct({ ...editingProduct, category: e.target.value })} /></div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500">一级分类</label>
+                                    <input
+                                        list="category-options"
+                                        required
+                                        className="w-full border p-2 rounded"
+                                        value={editingProduct?.category || ''}
+                                        onChange={e => setEditingProduct({ ...editingProduct, category: e.target.value })}
+                                        placeholder="选择或输入..."
+                                    />
+                                    <datalist id="category-options">
+                                        {categoryStructure.map(c => <option key={c.name} value={c.name} />)}
+                                    </datalist>
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-500">二级分类 (可选)</label>
+                                <input
+                                    list="subcategory-options"
+                                    className="w-full border p-2 rounded"
+                                    value={editingProduct?.subCategory || ''}
+                                    onChange={e => setEditingProduct({ ...editingProduct, subCategory: e.target.value })}
+                                    placeholder="选择或输入..."
+                                />
+                                <datalist id="subcategory-options">
+                                    {editingProduct?.category && categoryStructure.find(c => c.name === editingProduct.category)?.subCategories.map(sub => (
+                                        <option key={sub} value={sub} />
+                                    ))}
+                                </datalist>
                             </div>
                             <div className="space-y-1"><label className="text-xs font-bold text-gray-500">库存数量</label><input type="number" min="0" className="w-full border p-2 rounded" value={editingProduct?.stock ?? 0} onChange={e => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })} /></div>
                             <div className="space-y-1"><label className="text-xs font-bold text-gray-500">描述</label><textarea className="w-full border p-2 rounded" value={editingProduct?.description || ''} onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })} /></div>
@@ -1037,7 +1340,17 @@ export default function AdminPage() {
                                                     <td className="p-3 font-medium">{p.users?.name || '匿名'}</td>
                                                 )}
                                                 <td className="p-3">
-                                                    <span className="font-mono">{p.contact || '-'}</span>
+                                                    <span className="font-mono block">{p.contact || '-'}</span>
+                                                    {p.savedContacts && p.savedContacts.length > 0 && (
+                                                        <div className="mt-1 space-y-0.5">
+                                                            <span className="text-xs text-indigo-600 bg-indigo-50 px-1 py-0.5 rounded">备用:</span>
+                                                            {p.savedContacts.map((c: any, i: number) => (
+                                                                <div key={i} className="text-xs text-gray-500">
+                                                                    {c.label || c.type}: {c.value}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="p-3 text-gray-600">{new Date(p.joinedAt || '').toLocaleString()}</td>
                                                 {currentViewType === 'LOTTERY' && (

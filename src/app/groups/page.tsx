@@ -19,37 +19,46 @@ export default function GroupsPage() {
     const [loading, setLoading] = useState(true);
     const [userParticipations, setUserParticipations] = useState<UserParticipation>({});
 
-    // Prevent duplicate fetches (React StrictMode, fast re-renders)
-    const fetchingRef = useRef(false);
+    // Use promise ref to handle concurrent fetches (Strict Mode safe)
+    const activeFetchPromise = useRef<Promise<any> | null>(null);
     const lastFetchRef = useRef(0);
 
     const fetchGroups = useCallback(async (isInitial = false) => {
-        // Debounce: skip if fetched within last 500ms
+        // Debounce only for non-initial
         const now = Date.now();
-        if (!isInitial && now - lastFetchRef.current < 500) return;
-        if (fetchingRef.current) return;
+        if (!isInitial && now - lastFetchRef.current < 500) return null;
 
-        fetchingRef.current = true;
-        lastFetchRef.current = now;
-
-        try {
-            const res = await fetch('/api/groups');
-            if (res.ok) {
-                const data = await res.json();
-                setGroups(data);
-            }
-        } catch (error) {
-            console.error('Error fetching groups:', error);
-        } finally {
-            fetchingRef.current = false;
+        // If there's an active promise, return it
+        if (activeFetchPromise.current) {
+            return activeFetchPromise.current;
         }
+
+        const fetchPromise = (async () => {
+            try {
+                const res = await fetch('/api/groups');
+                if (res.ok) {
+                    const data = await res.json();
+                    setGroups(data);
+                    lastFetchRef.current = Date.now();
+                    return data;
+                }
+            } catch (error) {
+                console.error('Error fetching groups:', error);
+            } finally {
+                activeFetchPromise.current = null;
+            }
+            return null;
+        })();
+
+        activeFetchPromise.current = fetchPromise;
+        return fetchPromise;
     }, []);
 
     useEffect(() => {
         async function fetchData() {
             try {
                 // Fetch groups
-                await fetchGroups(true);
+                const data = await fetchGroups(true);
 
                 // Check user participation
                 const supabase = createClient();
@@ -71,6 +80,7 @@ export default function GroupsPage() {
             } catch (error) {
                 console.error('Error fetching groups:', error);
             } finally {
+                // Only turn off loading if data was attempted to be fetched or if we have data
                 setLoading(false);
             }
         }

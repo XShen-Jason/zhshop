@@ -9,6 +9,8 @@ export async function GET(
         const { id } = await params;
         const supabase = await createClient();
 
+        console.log('Fetching lottery ID:', id);
+
         // Get lottery details
         const { data: lottery, error } = await supabase
             .from('lotteries')
@@ -16,9 +18,13 @@ export async function GET(
             .eq('id', id)
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase error:', error);
+            throw error;
+        }
 
         if (!lottery) {
+            console.error('Lottery not found for ID:', id);
             return NextResponse.json({ error: 'Lottery not found' }, { status: 404 });
         }
 
@@ -120,6 +126,13 @@ export async function POST(
             return NextResponse.json({ error: '您已经参与过该抽奖' }, { status: 400 });
         }
 
+        const body = await request.json();
+        const contactInfo = body.contactInfo;
+
+        if (!contactInfo) {
+            return NextResponse.json({ error: '请提供联系方式' }, { status: 400 });
+        }
+
         // Get user points
         const { data: userProfile } = await supabase
             .from('users')
@@ -149,7 +162,8 @@ export async function POST(
             .insert({
                 lottery_id: id,
                 user_id: user.id,
-                is_winner: false
+                is_winner: false,
+                contact_info: contactInfo
             });
 
         if (entryError) throw entryError;

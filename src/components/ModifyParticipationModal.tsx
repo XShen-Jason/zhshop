@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Users, Edit2, Minus, Plus, CheckCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { ContactSelector } from '@/components/ContactSelector';
 
 interface ModifyParticipationModalProps {
     isOpen: boolean;
@@ -242,12 +243,10 @@ export function ModifyParticipationModal({
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 联系方式 <span className="text-red-500">*</span>
                             </label>
-                            <input
-                                type="text"
+                            <ContactSelector
                                 value={contact}
-                                onChange={e => setContact(e.target.value)}
+                                onChange={setContact}
                                 placeholder="微信号、邮箱或手机号"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                             />
                         </div>
 
