@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Gift, Clock, Users, ArrowRight, CheckCircle, Award, AlertCircle, Coins } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { pointsEvents } from '@/lib/events';
+import { createClient } from '@/lib/supabase/client';
 
 interface LotteryDetail {
     id: string;
@@ -70,6 +71,15 @@ export default function LotteryDetailPage() {
     }, [params.id, fetchLottery]);
 
     const handleEnter = async () => {
+        // Check auth first
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            router.push('/auth/login');
+            return;
+        }
+
         if (entering) return;
 
         setEntering(true);

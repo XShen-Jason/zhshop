@@ -16,12 +16,20 @@ const navItems = [
     { href: '/tutorials', label: '教程', icon: BookOpen },
 ];
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+    user?: SupabaseUser | null;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
     const pathname = usePathname();
     const router = useRouter();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [user, setUser] = useState<SupabaseUser | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<SupabaseUser | null>(initialUser);
+    const [loading, setLoading] = useState(initialUser === undefined);
+
+    // Sync state if prop changes (e.g. server re-render after login)
+
+
     const [points, setPoints] = useState(0);
     const [streak, setStreak] = useState(0);
     const [canCheckIn, setCanCheckIn] = useState(false);
@@ -53,6 +61,23 @@ export const Navbar: React.FC = () => {
             fetchingRef.current = false;
         }
     }, []);
+
+    // Sync state if prop changes (e.g. server re-render after login)
+    useEffect(() => {
+        if (initialUser !== undefined) {
+            setUser(initialUser);
+            setLoading(false);
+
+            if (initialUser) {
+                fetchCheckInStatus();
+            } else {
+                setPoints(0);
+                setStreak(0);
+                setCanCheckIn(false);
+            }
+        }
+    }, [initialUser, fetchCheckInStatus]);
+
 
     useEffect(() => {
         const supabase = createClient();

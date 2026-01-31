@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { CheckCircle, BookOpen, ArrowRight, Minus, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Product } from '@/types';
+import { createClient } from '@/lib/supabase/client';
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -47,6 +48,14 @@ export default function ProductDetailPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!product) return;
+
+        // Check auth first
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            router.push('/auth/login');
+            return;
+        }
 
         setSubmitting(true);
         try {
