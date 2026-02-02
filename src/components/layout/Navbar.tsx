@@ -317,8 +317,13 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
                             <div className="border-t border-gray-100 mt-2 pt-2">
                                 {user ? (
                                     <>
-                                        <Link href="/groups" className={`text-base font-medium transition block py-2 text-lg ${pathname?.startsWith('/groups') ? 'text-indigo-600 font-bold' : 'text-gray-600 hover:text-indigo-600'}`}>
-                                            拼团
+                                        <Link href="/user" className={`flex items-center w-full px-4 py-3 text-sm font-medium ${pathname === '/user' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:bg-gray-50'}`}>
+                                            <User size={18} className="mr-3" />
+                                            个人中心
+                                        </Link>
+                                        <Link href="/groups" className={`flex items-center w-full px-4 py-3 text-sm font-medium ${pathname?.startsWith('/groups') ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:bg-gray-50'}`}>
+                                            <Users size={18} className="mr-3" />
+                                            我的拼团
                                         </Link>
                                         <button
                                             onClick={() => {

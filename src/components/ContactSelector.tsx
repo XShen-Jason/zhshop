@@ -121,9 +121,11 @@ export function ContactSelector({ value, onChange, placeholder = "请输入联�
             )}
 
             {savedContacts.length === 0 && !loading && (
-                <div className="text-xs text-gray-400 text-right">
-                    <Link href="/user?tab=contacts" className="hover:text-indigo-600 hover:underline">
+                <div className="mt-2 text-right">
+                    <Link href="/user?tab=contacts" className="inline-flex items-center text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition shadow-sm border border-indigo-100">
+                        <span className="mr-1">🚀</span>
                         设置常用联系方式可快速填写
+                        <ChevronDown size={14} className="ml-1 -rotate-90" />
                     </Link>
                 </div>
             )}
