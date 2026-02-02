@@ -35,12 +35,41 @@ export function ShareButton({ title, text, url, className = '' }: ShareButtonPro
             }
         }
 
-        // Fallback to Clipboard
+        // Fallback to Clipboard (Modern)
+        if (navigator.clipboard) {
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                showToast('链接已复制到剪贴板', 'success');
+                return;
+            } catch (err) {
+                console.warn('Clipboard API failed', err);
+            }
+        }
+
+        // Legacy Fallback (for HTTP or unsupported browsers)
         try {
-            await navigator.clipboard.writeText(shareUrl);
-            showToast('链接已复制到剪贴板', 'success');
+            const textArea = document.createElement('textarea');
+            textArea.value = shareUrl;
+
+            // Ensure it's not visible but part of DOM
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            textArea.style.top = '0';
+            document.body.appendChild(textArea);
+
+            textArea.focus();
+            textArea.select();
+
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+
+            if (successful) {
+                showToast('链接已复制到剪贴板', 'success');
+            } else {
+                showToast('复制失败，请手动复制', 'error');
+            }
         } catch (err) {
-            console.error('Copy failed', err);
+            console.error('Legacy copy failed', err);
             showToast('复制失败', 'error');
         }
     };
