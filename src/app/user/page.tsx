@@ -166,27 +166,27 @@ export default function UserPage() {
     return (
         <div className="max-w-6xl mx-auto p-6">
             {/* User Header */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-8 flex flex-col md:flex-row items-center justify-between">
-                <div className="flex items-center space-x-6 mb-6 md:mb-0">
-                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white shadow-lg">
-                        <UserIcon size={36} />
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8 mb-6 md:mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex flex-col md:flex-row items-center md:space-x-6 w-full md:w-auto">
+                    <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white shadow-lg mb-4 md:mb-0 flex-shrink-0">
+                        <UserIcon size={36} className="md:w-10 md:h-10" />
                     </div>
-                    <div>
+                    <div className="text-center md:text-left flex-1 min-w-0">
                         <h1 className="text-2xl font-bold text-gray-900 mb-1">{profile.name}</h1>
-                        <p className="text-gray-500">{profile.email}</p>
-                        <div className="mt-2 flex items-center space-x-2">
-                            <span className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-xs font-bold text-gray-600">
+                        <p className="text-gray-500 truncate mb-3">{profile.email}</p>
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                            <span className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-xs font-bold text-gray-600 border border-gray-200">
                                 {profile.role === 'ADMIN' ? '管理员' : '普通用户'}
                             </span>
                             {profile.checkInStreak > 0 && (
-                                <span className="inline-flex items-center bg-green-100 px-3 py-1 rounded-full text-xs font-bold text-green-600">
+                                <span className="inline-flex items-center bg-green-50 px-3 py-1 rounded-full text-xs font-bold text-green-600 border border-green-100">
                                     <Calendar size={12} className="mr-1" />
-                                    连续{profile.checkInStreak}天
+                                    已签 {profile.checkInStreak} 天
                                 </span>
                             )}
                             <button
                                 onClick={handleLogout}
-                                className="inline-flex items-center bg-red-50 px-3 py-1 rounded-full text-xs font-bold text-red-600 hover:bg-red-100 transition"
+                                className="inline-flex items-center bg-red-50 px-3 py-1 rounded-full text-xs font-bold text-red-600 hover:bg-red-100 border border-red-100 transition"
                             >
                                 <LogOut size={12} className="mr-1" />
                                 退出
@@ -194,36 +194,38 @@ export default function UserPage() {
                         </div>
                     </div>
                 </div>
-                <Link href="/points" className="bg-gradient-to-r from-amber-50 to-orange-50 px-8 py-4 rounded-2xl border border-amber-100 flex items-center space-x-4 hover:shadow-md transition-all cursor-pointer">
-                    <div className="p-3 bg-white rounded-full text-amber-500 shadow-sm">
-                        <Coins size={24} />
-                    </div>
-                    <div>
-                        <div className="text-xs text-amber-700 uppercase font-bold tracking-wider flex items-center">
-                            我的积分 <ArrowRight size={12} className="ml-1 opacity-50" />
+
+                <Link href="/points" className="w-full md:w-auto bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 rounded-2xl border border-amber-100 flex items-center justify-between md:justify-start space-x-4 hover:shadow-md transition-all cursor-pointer group">
+                    <div className="flex items-center">
+                        <div className="p-3 bg-white rounded-full text-amber-500 shadow-sm mr-4 group-hover:scale-110 transition-transform">
+                            <Coins size={24} />
                         </div>
-                        <div className="text-2xl font-extrabold text-gray-900">{profile.points}</div>
+                        <div>
+                            <div className="text-xs text-amber-700/70 uppercase font-bold tracking-wider mb-0.5">我的积分</div>
+                            <div className="text-2xl font-extrabold text-gray-900">{profile.points}</div>
+                        </div>
                     </div>
+                    <ArrowRight size={18} className="text-amber-400 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
                 </Link>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                <Card className="p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100">
-                    <h3 className="text-blue-900 font-bold mb-2 text-lg">全部订单</h3>
-                    <p className="text-3xl font-extrabold text-blue-600">{orders.length}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-8 md:mb-10">
+                <Card className="p-4 md:p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100 hover:shadow-md transition-shadow">
+                    <h3 className="text-blue-900/70 font-bold mb-1 md:mb-2 text-sm md:text-lg">全部订单</h3>
+                    <p className="text-2xl md:text-3xl font-extrabold text-blue-600">{orders.length}</p>
                 </Card>
-                <Card className="p-6 bg-gradient-to-br from-purple-50 to-white border-purple-100">
-                    <h3 className="text-purple-900 font-bold mb-2 text-lg">待联系</h3>
-                    <p className="text-3xl font-extrabold text-purple-600">{pendingCount}</p>
+                <Card className="p-4 md:p-6 bg-gradient-to-br from-purple-50 to-white border-purple-100 hover:shadow-md transition-shadow">
+                    <h3 className="text-purple-900/70 font-bold mb-1 md:mb-2 text-sm md:text-lg">待联系</h3>
+                    <p className="text-2xl md:text-3xl font-extrabold text-purple-600">{pendingCount}</p>
                 </Card>
-                <Card className="p-6 bg-gradient-to-br from-pink-50 to-white border-pink-100">
-                    <h3 className="text-pink-900 font-bold mb-2 text-lg">抽奖中奖</h3>
-                    <p className="text-3xl font-extrabold text-pink-600">{wonCount}/{lotteries.length}</p>
+                <Card className="p-4 md:p-6 bg-gradient-to-br from-pink-50 to-white border-pink-100 hover:shadow-md transition-shadow">
+                    <h3 className="text-pink-900/70 font-bold mb-1 md:mb-2 text-sm md:text-lg">中奖记录</h3>
+                    <p className="text-2xl md:text-3xl font-extrabold text-pink-600">{wonCount}/{lotteries.length}</p>
                 </Card>
-                <Card className="p-6 bg-gradient-to-br from-green-50 to-white border-green-100">
-                    <h3 className="text-green-900 font-bold mb-2 text-lg">拼团锁定</h3>
-                    <p className="text-3xl font-extrabold text-green-600">{groups.filter(g => g.group?.status === '已锁单' || g.group?.status === '已结束').length}/{groups.length}</p>
+                <Card className="p-4 md:p-6 bg-gradient-to-br from-green-50 to-white border-green-100 hover:shadow-md transition-shadow">
+                    <h3 className="text-green-900/70 font-bold mb-1 md:mb-2 text-sm md:text-lg">拼团锁定</h3>
+                    <p className="text-2xl md:text-3xl font-extrabold text-green-600">{groups.filter(g => g.group?.status === '已锁单' || g.group?.status === '已结束').length}/{groups.length}</p>
                 </Card>
             </div>
 
