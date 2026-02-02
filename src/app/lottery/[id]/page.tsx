@@ -6,6 +6,7 @@ import { Gift, Clock, Users, Trophy, AlertTriangle, ArrowLeft } from 'lucide-rea
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { ShareButton } from '@/components/ui/ShareButton';
 import { ContactSelector } from '@/components/ContactSelector';
 import { createClient } from '@/lib/supabase/client';
 import { formatBeijing } from '@/lib/timezone';
@@ -155,6 +156,7 @@ export default function LotteryDetailPage() {
                         <div className="flex justify-between items-start mb-4">
                             <Badge status={lottery.status} className="bg-white/20 text-white border-white/20 backdrop-blur-md" />
                             <div className="flex items-center space-x-2">
+                                <ShareButton title={lottery.title} className="bg-white/20 text-white hover:bg-white/30 border-transparent shadow-none" />
                                 <span className="flex items-center bg-black/20 px-3 py-1 rounded-full text-sm backdrop-blur-md">
                                     <Trophy size={14} className="mr-1.5 text-yellow-300" />
                                     {lottery.winnersCount} 名中奖者

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { CheckCircle, Users, ArrowRight, Edit2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
+import { ShareButton } from '@/components/ui/ShareButton';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ModifyParticipationModal } from '@/components/ModifyParticipationModal';
 import { GroupBuy } from '@/types';
@@ -127,14 +128,17 @@ export default function GroupDetailPage() {
             </button>
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
                 <div className="p-8 md:p-12">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><Users size={20} /></div>
-                        <Badge status={group.status} />
-                        {hasParticipation && (
-                            <span className="text-xs font-bold bg-green-100 text-green-600 px-2 py-1 rounded">
-                                您已参与 ({userParticipation.quantity} 份)
-                            </span>
-                        )}
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><Users size={20} /></div>
+                            <Badge status={group.status} />
+                            {hasParticipation && (
+                                <span className="text-xs font-bold bg-green-100 text-green-600 px-2 py-1 rounded">
+                                    您已参与 ({userParticipation.quantity} 份)
+                                </span>
+                            )}
+                        </div>
+                        <ShareButton title={group.title} />
                     </div>
                     <h1 className="text-3xl font-extrabold text-gray-900 mb-4">{group.title}</h1>
                     <p className="text-gray-600 leading-relaxed mb-8">{group.description}</p>

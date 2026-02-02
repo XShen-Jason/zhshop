@@ -9,6 +9,7 @@ import { ContactSelector } from '@/components/ContactSelector';
 import { Product } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/GlobalToast';
+import { ShareButton } from '@/components/ui/ShareButton';
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -140,9 +141,12 @@ export default function ProductDetailPage() {
             </button>
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden md:flex min-h-[500px]">
                 <div className="p-8 md:p-12 md:w-3/5 flex flex-col">
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{product.category}</span>
-                        <Badge status={product.inStock ? '有货' : '无货'} />
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{product.category}</span>
+                            <Badge status={product.inStock ? '有货' : '无货'} />
+                        </div>
+                        <ShareButton title={product.title} />
                     </div>
                     <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 leading-tight">{product.title}</h1>
                     <div className="flex items-center gap-4 mb-8">
