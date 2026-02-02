@@ -19,21 +19,26 @@ export default function Footer() {
     const [friendLinks, setFriendLinks] = useState<{ title: string; url: string }[]>([]);
 
     useEffect(() => {
-        fetch('/api/site-config')
-            .then(res => res.json())
-            .then(data => {
-                setConfig(data);
-                if (data.friend_links) {
-                    try {
+        const fetchConfig = async () => {
+            try {
+                const res = await fetch('/api/site-config');
+                if (res.ok) {
+                    const data = await res.json();
+                    setConfig(data);
+                    if (data.friend_links) {
                         const links = data.friend_links.split('\n').map((line: string) => {
                             const [title, url] = line.split('|');
                             return { title: title?.trim(), url: url?.trim() };
                         }).filter((l: any) => l.title && l.url);
                         setFriendLinks(links);
-                    } catch (e) { console.error('Error parsing friend links', e); }
+                    }
                 }
-            })
-            .catch(() => { });
+            } catch (error) {
+                console.error('Failed to fetch site config:', error);
+            }
+        };
+
+        fetchConfig();
     }, []);
 
     const currentYear = new Date().getFullYear();

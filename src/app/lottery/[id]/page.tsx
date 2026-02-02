@@ -6,8 +6,8 @@ import { Gift, Clock, Users, Trophy, AlertTriangle, ArrowLeft } from 'lucide-rea
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { ShareButton } from '@/components/ui/ShareButton';
 import { ContactSelector } from '@/components/ContactSelector';
+import { ShareButton } from '@/components/ui/ShareButton';
 import { createClient } from '@/lib/supabase/client';
 import { formatBeijing } from '@/lib/timezone';
 import { Lottery } from '@/types';
@@ -143,9 +143,12 @@ export default function LotteryDetailPage() {
 
     return (
         <div className="max-w-4xl mx-auto p-6 min-h-screen">
-            <Link href="/lottery" className="inline-flex items-center text-gray-500 hover:text-gray-900 mb-6 transition">
-                <ArrowLeft size={18} className="mr-1" /> 返回列表
-            </Link>
+            <div className="flex justify-between items-center mb-6">
+                <Link href="/lottery" className="inline-flex items-center text-gray-500 hover:text-gray-900 transition">
+                    <ArrowLeft size={18} className="mr-1" /> 返回列表
+                </Link>
+                <ShareButton title={`参与抽奖：${lottery.title}`} text={`${lottery.description?.slice(0, 50)}...`} />
+            </div>
 
             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
                 {/* Header Section */}
@@ -156,7 +159,6 @@ export default function LotteryDetailPage() {
                         <div className="flex justify-between items-start mb-4">
                             <Badge status={lottery.status} className="bg-white/20 text-white border-white/20 backdrop-blur-md" />
                             <div className="flex items-center space-x-2">
-                                <ShareButton title={lottery.title} className="bg-white/20 text-white hover:bg-white/30 border-transparent shadow-none" />
                                 <span className="flex items-center bg-black/20 px-3 py-1 rounded-full text-sm backdrop-blur-md">
                                     <Trophy size={14} className="mr-1.5 text-yellow-300" />
                                     {lottery.winnersCount} 名中奖者

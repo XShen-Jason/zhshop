@@ -4,9 +4,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { CheckCircle, Users, ArrowRight, Edit2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import { ShareButton } from '@/components/ui/ShareButton';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ModifyParticipationModal } from '@/components/ModifyParticipationModal';
+import { ShareButton } from '@/components/ui/ShareButton';
 import { GroupBuy } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 
@@ -123,22 +123,22 @@ export default function GroupDetailPage() {
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
-            <button onClick={() => router.back()} className="text-sm text-gray-500 hover:text-gray-900 mb-6 flex items-center transition-colors">
-                <ArrowRight className="rotate-180 mr-2" size={16} /> 返回列表
-            </button>
+            <div className="flex justify-between items-center mb-6">
+                <button onClick={() => router.back()} className="text-sm text-gray-500 hover:text-gray-900 flex items-center transition-colors">
+                    <ArrowRight className="rotate-180 mr-2" size={16} /> 返回列表
+                </button>
+                <ShareButton title={`一起拼团：${group.title}`} text={`${group.description?.slice(0, 50)}...`} />
+            </div>
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
                 <div className="p-8 md:p-12">
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><Users size={20} /></div>
-                            <Badge status={group.status} />
-                            {hasParticipation && (
-                                <span className="text-xs font-bold bg-green-100 text-green-600 px-2 py-1 rounded">
-                                    您已参与 ({userParticipation.quantity} 份)
-                                </span>
-                            )}
-                        </div>
-                        <ShareButton title={group.title} />
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><Users size={20} /></div>
+                        <Badge status={group.status} />
+                        {hasParticipation && (
+                            <span className="text-xs font-bold bg-green-100 text-green-600 px-2 py-1 rounded">
+                                您已参与 ({userParticipation.quantity} 份)
+                            </span>
+                        )}
                     </div>
                     <h1 className="text-3xl font-extrabold text-gray-900 mb-4">{group.title}</h1>
                     <p className="text-gray-600 leading-relaxed mb-8">{group.description}</p>

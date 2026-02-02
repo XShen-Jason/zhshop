@@ -1,44 +1,46 @@
 'use client';
 
 import React from 'react';
-import { Share2, Copy } from 'lucide-react';
+import { Share2, Check, Copy } from 'lucide-react';
 import { useToast } from '@/lib/GlobalToast';
 
 interface ShareButtonProps {
-    title: string;
+    title?: string;
     text?: string;
     url?: string;
-    className?: string; // Allow custom styling
+    className?: string;
 }
 
-export function ShareButton({ title, text, url, className }: ShareButtonProps) {
+export function ShareButton({ title, text, url, className = '' }: ShareButtonProps) {
     const { showToast } = useToast();
 
     const handleShare = async () => {
         const shareUrl = url || window.location.href;
         const shareData = {
-            title: title,
-            text: text || `Check out ${title}`,
+            title: title || document.title,
+            text: text,
             url: shareUrl,
         };
 
-        // Try native share
-        if (navigator.share) {
+        // Try Web Share API first (Mobile)
+        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
             try {
                 await navigator.share(shareData);
                 return;
             } catch (err) {
-                // User cancelled or error, fall back to clipboard
-                console.log('Share cancelled or failed, falling back to clipboard');
+                // Ignore AbortError (user cancelled)
+                if ((err as Error).name !== 'AbortError') {
+                    console.error('Share failed', err);
+                }
             }
         }
 
-        // Fallback: Copy to clipboard
+        // Fallback to Clipboard
         try {
             await navigator.clipboard.writeText(shareUrl);
-            showToast('链接已复制到剪贴板！', 'success');
+            showToast('链接已复制到剪贴板', 'success');
         } catch (err) {
-            console.error('Failed to copy: ', err);
+            console.error('Copy failed', err);
             showToast('复制失败', 'error');
         }
     };
@@ -46,10 +48,10 @@ export function ShareButton({ title, text, url, className }: ShareButtonProps) {
     return (
         <button
             onClick={handleShare}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition font-medium text-sm ${className || ''}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors font-medium ${className}`}
             title="分享此页面"
         >
-            <Share2 size={16} />
+            <Share2 size={18} />
             <span>分享</span>
         </button>
     );
