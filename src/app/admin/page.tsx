@@ -112,6 +112,12 @@ export default function AdminPage() {
     });
     const [siteConfigLoading, setSiteConfigLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [transactionStats, setTransactionStats] = useState({
+        todayRevenue: 0,
+        yesterdayRevenue: 0,
+        monthlyRevenue: 0,
+        monthlyOrderCount: 0
+    });
 
     const router = useRouter();
     const supabase = createClient();
@@ -214,6 +220,13 @@ export default function AdminPage() {
             setLoading(true);
             await fetchAllData();
             await fetchSiteConfig();
+            // Fetch transaction stats
+            try {
+                const statsRes = await fetch('/api/admin/stats');
+                if (statsRes.ok) {
+                    setTransactionStats(await statsRes.json());
+                }
+            } catch (e) { console.error('Failed to fetch stats', e); }
             setLoading(false);
             setIsInitialLoad(false);
         }
@@ -225,7 +238,11 @@ export default function AdminPage() {
         if (isInitialLoad) return; // Skip during initial load
 
         switch (activeTab) {
-            case 'overview': fetchSiteConfig(); break;
+            case 'overview':
+                fetchSiteConfig();
+                // Also refresh stats
+                fetch('/api/admin/stats').then(async r => { if (r.ok) setTransactionStats(await r.json()); }).catch(() => { });
+                break;
             case 'orders': fetchOrders(true); break;
             case 'products': fetchProducts(true); break;
             case 'groups': fetchGroups(true); break;
@@ -266,6 +283,14 @@ export default function AdminPage() {
     const orderStatuses = ['全部', '待联系', '已联系', '已完成', '已取消'];
 
     const updateOrderStatus = async (id: string, status: string) => {
+        // Require confirmation for status changes
+        const confirmed = await confirm({
+            message: `确定将订单状态更改为"${status}"吗？`,
+            variant: status === '已取消' ? 'danger' : 'warning',
+            confirmText: '确定更改'
+        });
+        if (!confirmed) return;
+
         // Immediate optimistic update
         setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
 
@@ -581,6 +606,27 @@ export default function AdminPage() {
     // --- Renderers ---
     const renderOverview = () => (
         <div className="space-y-4 md:space-y-6">
+            {/* Transaction Stats - Revenue Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-3 md:p-4 rounded-lg shadow-sm border border-green-200">
+                    <p className="text-xs md:text-sm text-green-700">今日交易额</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-green-600">￥{transactionStats.todayRevenue.toFixed(2)}</h3>
+                </div>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-3 md:p-4 rounded-lg shadow-sm border border-blue-200">
+                    <p className="text-xs md:text-sm text-blue-700">昨日交易额</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-blue-600">￥{transactionStats.yesterdayRevenue.toFixed(2)}</h3>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-3 md:p-4 rounded-lg shadow-sm border border-purple-200">
+                    <p className="text-xs md:text-sm text-purple-700">本月总额</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-purple-600">￥{transactionStats.monthlyRevenue.toFixed(2)}</h3>
+                </div>
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-3 md:p-4 rounded-lg shadow-sm border border-amber-200">
+                    <p className="text-xs md:text-sm text-amber-700">本月订单</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-amber-600">{transactionStats.monthlyOrderCount} 笔</h3>
+                </div>
+            </div>
+
+            {/* Operational Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
                 <div className="bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-200">
                     <p className="text-xs md:text-sm text-gray-500">待处理订单</p>

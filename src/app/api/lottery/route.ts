@@ -73,10 +73,16 @@ export async function GET(request: Request) {
             isHot: l.is_hot || false
         }));
 
-        // Sort: pending (待开奖) first, then ended (已结束), then by draw_date
+        // Sort: status priority (pending first), then isHot, then by drawDate
         lotteries.sort((a, b) => {
+            // 1. Status: 待开奖 first
             if (a.status === '待开奖' && b.status !== '待开奖') return -1;
             if (a.status !== '待开奖' && b.status === '待开奖') return 1;
+            // 2. isHot: Hot items first within same status
+            if (a.isHot !== b.isHot) {
+                return a.isHot ? -1 : 1;
+            }
+            // 3. Draw date: ascending for pending, descending for ended
             return new Date(a.drawDate).getTime() - new Date(b.drawDate).getTime();
         });
 

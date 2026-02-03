@@ -7,21 +7,15 @@ export async function GET(request: Request) {
         const limit = url.searchParams.get('limit');
 
         const supabase = await createClient();
-        let query = supabase
+        // Fetch all products - we'll sort in JS for consistency with groups
+        const { data, error } = await supabase
             .from('products')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (limit) {
-            query = query.limit(parseInt(limit, 10));
-        }
-
-        const { data, error } = await query;
+            .select('*');
 
         if (error) throw error;
 
         // Transform snake_case to camelCase for frontend
-        const products = data.map(p => ({
+        let products = (data || []).map(p => ({
             id: p.id,
             title: p.title,
             description: p.description,
@@ -33,8 +27,26 @@ export async function GET(request: Request) {
             features: p.features || [],
             specs: p.specs,
             tutorialId: p.tutorial_id,
-            isHot: p.is_hot || false
+            isHot: p.is_hot || false,
+            updatedAt: p.updated_at || p.created_at
         }));
+
+        // Sort: isHot first, then by updatedAt DESC (same logic as groups)
+        products.sort((a, b) => {
+            // 1. isHot: Hot items first
+            if (a.isHot !== b.isHot) {
+                return a.isHot ? -1 : 1;
+            }
+            // 2. Updated At: Recent to Old
+            const timeA = new Date(a.updatedAt).getTime();
+            const timeB = new Date(b.updatedAt).getTime();
+            return timeB - timeA;
+        });
+
+        // Apply limit after sorting
+        if (limit) {
+            products = products.slice(0, parseInt(limit, 10));
+        }
 
         return NextResponse.json(products);
     } catch (error) {

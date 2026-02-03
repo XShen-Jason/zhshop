@@ -26,15 +26,31 @@ export async function login(formData: FormData) {
 
 export async function signup(formData: FormData) {
     const supabase = await createClient();
+    const adminClient = createAdminClient();
 
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const name = formData.get('name') as string;
+    const inviteCode = formData.get('inviteCode') as string;
+
+    // ========== Validate Invite Code (Required) ==========
+    let inviterId: string | null = null;
+
+    if (inviteCode) {
+        const { data: inviter } = await adminClient
+            .from('users')
+            .select('id')
+            .eq('invite_code', inviteCode)
+            .single();
+
+        if (!inviter) {
+            return { error: '邀请码无效，请检查后重新输入' };
+        }
+        inviterId = inviter.id;
+    }
 
     // ========== Lazy Cleanup: Delete unverified users older than 24h ==========
     try {
-        const adminClient = createAdminClient();
-
         // Check for existing unverified user with the same email
         const { data: existingUsers } = await adminClient.auth.admin.listUsers();
         const existingUser = existingUsers?.users?.find(u => u.email === email);
@@ -81,25 +97,62 @@ export async function signup(formData: FormData) {
 
     // Create user profile in the users table
     if (authData.user) {
-        // Use upsert to handle potential race conditions with database triggers
-        const { error: profileError } = await supabase.from('users').upsert({
+        // Calculate points: 200 base + 100 bonus if invited
+        const basePoints = 200;
+        const inviteBonus = inviterId ? 100 : 0;
+        const totalPoints = basePoints + inviteBonus;
+
+        // Use admin client to bypass RLS for user creation
+        const { error: profileError } = await adminClient.from('users').upsert({
             id: authData.user.id,
             email,
             name,
             role: 'USER',
-            points: 200, // Welcome bonus
+            points: totalPoints,
+            invited_by: inviterId,
         }, { onConflict: 'id' });
 
         if (profileError) {
             console.error('Error creating user profile:', profileError);
         } else {
             // Add point log for registration bonus
-            await supabase.from('point_logs').insert({
+            await adminClient.from('point_logs').insert({
                 user_id: authData.user.id,
-                amount: 200,
+                amount: basePoints,
                 reason: '新用户注册奖励',
                 type: 'EARN'
             });
+
+            // If invited, add bonus log for new user and reward for inviter
+            if (inviterId) {
+                // Log invite bonus for new user
+                await adminClient.from('point_logs').insert({
+                    user_id: authData.user.id,
+                    amount: inviteBonus,
+                    reason: '邀请码注册奖励',
+                    type: 'EARN'
+                });
+
+                // Award inviter 200 points
+                const { data: inviterProfile } = await adminClient
+                    .from('users')
+                    .select('points')
+                    .eq('id', inviterId)
+                    .single();
+
+                if (inviterProfile) {
+                    const newInviterPoints = (inviterProfile.points || 0) + 200;
+                    await adminClient.from('users').update({ points: newInviterPoints }).eq('id', inviterId);
+
+                    // Log inviter reward
+                    await adminClient.from('point_logs').insert({
+                        user_id: inviterId,
+                        amount: 200,
+                        reason: `邀请用户 ${name} 注册奖励`,
+                        type: 'EARN'
+                    });
+                }
+            }
         }
     }
 

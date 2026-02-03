@@ -1,17 +1,63 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Mail, Lock, User, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Mail, Lock, User, UserPlus, AlertCircle, CheckCircle, Gift } from 'lucide-react';
 import { signup } from '../actions';
 
 export default function SignupPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [registeredEmail, setRegisteredEmail] = useState('');
+
+    // Invite code state
+    const [inviteCode, setInviteCode] = useState('');
+    const [inviteCodeLocked, setInviteCodeLocked] = useState(false);
+    const [inviterName, setInviterName] = useState<string | null>(null);
+    const [validatingCode, setValidatingCode] = useState(false);
+
+    // Read invite code from URL on mount
+    useEffect(() => {
+        const refCode = searchParams.get('ref');
+        if (refCode) {
+            setInviteCode(refCode);
+            setInviteCodeLocked(true);
+            // Validate the code
+            validateInviteCode(refCode);
+        }
+    }, [searchParams]);
+
+    const validateInviteCode = async (code: string) => {
+        if (!code) {
+            setInviterName(null);
+            return;
+        }
+
+        setValidatingCode(true);
+        try {
+            const res = await fetch(`/api/invite/validate?code=${encodeURIComponent(code)}`);
+            const data = await res.json();
+
+            if (data.valid) {
+                setInviterName(data.inviterName);
+                setError(null);
+            } else {
+                setInviterName(null);
+                if (!inviteCodeLocked) {
+                    // Only show error if user typed the code (not from URL)
+                    // For URL codes, we'll show error on submit
+                }
+            }
+        } catch (err) {
+            console.error('Error validating invite code:', err);
+        } finally {
+            setValidatingCode(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -27,6 +73,20 @@ export default function SignupPage() {
             setLoading(false);
             return;
         }
+
+        // Validate invite code before submitting
+        if (inviteCode) {
+            const res = await fetch(`/api/invite/validate?code=${encodeURIComponent(inviteCode)}`);
+            const data = await res.json();
+            if (!data.valid) {
+                setError(data.error || '邀请码无效');
+                setLoading(false);
+                return;
+            }
+        }
+
+        // Add invite code to form data
+        formData.set('inviteCode', inviteCode);
 
         const result = await signup(formData);
 
@@ -138,6 +198,49 @@ export default function SignupPage() {
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
                                 />
                             </div>
+                        </div>
+
+                        {/* Invite Code Field */}
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                                邀请码 <span className="text-gray-400 font-normal">(选填)</span>
+                            </label>
+                            <div className="relative">
+                                <Gift size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={inviteCode}
+                                    onChange={(e) => {
+                                        const code = e.target.value.toUpperCase();
+                                        setInviteCode(code);
+                                        if (code.length >= 8) {
+                                            validateInviteCode(code);
+                                        } else {
+                                            setInviterName(null);
+                                        }
+                                    }}
+                                    disabled={inviteCodeLocked}
+                                    placeholder="填写邀请码获得额外积分"
+                                    className={`w-full border rounded-xl pl-12 pr-4 py-3 text-sm outline-none transition-all ${inviteCodeLocked
+                                            ? 'bg-green-50 border-green-200 text-green-700 cursor-not-allowed'
+                                            : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:bg-white'
+                                        }`}
+                                />
+                                {validatingCode && (
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                        <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                )}
+                            </div>
+                            {inviterName && (
+                                <p className="mt-2 text-sm text-green-600 flex items-center">
+                                    <CheckCircle size={14} className="mr-1" />
+                                    来自 <strong className="mx-1">{inviterName}</strong> 的邀请 · 额外获得 100 积分
+                                </p>
+                            )}
+                            {inviteCodeLocked && (
+                                <p className="mt-1 text-xs text-gray-400">邀请码已锁定</p>
+                            )}
                         </div>
 
                         <button

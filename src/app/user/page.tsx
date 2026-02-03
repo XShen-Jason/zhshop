@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { User as UserIcon, Gift, ShoppingBag, Clock, ChevronRight, LogOut, Calendar, Coins, Trophy, ArrowRight, Users, Edit2, X } from 'lucide-react';
+import { User as UserIcon, Gift, ShoppingBag, Clock, ChevronRight, LogOut, Calendar, Coins, Trophy, ArrowRight, Users, Edit2, X, Share2, Copy, Check } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ModifyParticipationModal } from '@/components/ModifyParticipationModal';
@@ -79,6 +79,10 @@ export default function UserPage() {
         contact: string;
     } | null>(null);
     const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+    const [inviteCode, setInviteCode] = useState<string | null>(null);
+    const [inviteCopied, setInviteCopied] = useState(false);
+    const [editingName, setEditingName] = useState(false);
+    const [newName, setNewName] = useState('');
     const { showToast } = useToast();
     const { confirm } = useConfirm();
 
@@ -153,6 +157,16 @@ export default function UserPage() {
                 setShowFirstTimeModal(true);
                 localStorage.setItem('zhshop_contact_prompted', 'true');
             }
+
+            // Fetch invite code
+            fetch('/api/invite')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.inviteCode) {
+                        setInviteCode(data.inviteCode);
+                    }
+                })
+                .catch(err => console.error('Error fetching invite code:', err));
         }
     }, [loading, profile]);
 
@@ -187,7 +201,66 @@ export default function UserPage() {
                         <UserIcon size={36} className="md:w-10 md:h-10" />
                     </div>
                     <div className="text-center md:text-left flex-1 min-w-0">
-                        <h1 className="text-2xl font-bold text-gray-900 mb-1">{profile.name}</h1>
+                        {editingName ? (
+                            <div className="flex items-center gap-2 mb-1">
+                                <input
+                                    type="text"
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    className="text-xl font-bold text-gray-900 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    autoFocus
+                                    maxLength={50}
+                                />
+                                <button
+                                    onClick={async () => {
+                                        if (!newName.trim()) {
+                                            showToast('用户名不能为空', 'error');
+                                            return;
+                                        }
+                                        try {
+                                            const res = await fetch('/api/user/profile', {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ name: newName.trim() })
+                                            });
+                                            if (res.ok) {
+                                                setProfile({ ...profile, name: newName.trim() });
+                                                setEditingName(false);
+                                                showToast('用户名已更新', 'success');
+                                            } else {
+                                                const data = await res.json();
+                                                showToast(data.error || '更新失败', 'error');
+                                            }
+                                        } catch {
+                                            showToast('更新失败', 'error');
+                                        }
+                                    }}
+                                    className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                                >
+                                    <Check size={16} />
+                                </button>
+                                <button
+                                    onClick={() => setEditingName(false)}
+                                    className="p-1.5 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
+                                <h1 className="text-2xl font-bold text-gray-900">{profile.name}</h1>
+                                <button
+                                    onClick={() => {
+                                        setNewName(profile.name);
+                                        setEditingName(true);
+                                    }}
+                                    className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                                    title="修改用户名"
+                                >
+                                    <Edit2 size={14} />
+                                </button>
+                            </div>
+                        )}
                         <p className="text-gray-500 truncate mb-3">{profile.email}</p>
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                             <span className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-xs font-bold text-gray-600 border border-gray-200">
@@ -243,6 +316,40 @@ export default function UserPage() {
                     <p className="text-2xl md:text-3xl font-extrabold text-green-600">{groups.filter(g => g.group?.status === '已锁单' || g.group?.status === '已结束').length}/{groups.length}</p>
                 </Card>
             </div>
+
+            {/* Invite Card - Compact */}
+            {inviteCode && (
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 p-4 mb-6">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center min-w-0">
+                            <div className="p-2 bg-white rounded-lg shadow-sm mr-3 flex-shrink-0">
+                                <Share2 size={18} className="text-indigo-600" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold text-gray-900">邀请好友得积分</p>
+                                <p className="text-xs text-gray-500 truncate">
+                                    邀请码: <span className="font-mono text-indigo-600">{inviteCode}</span>
+                                    <span className="hidden sm:inline"> · 好友得300 · 你得200</span>
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                const siteUrl = window.location.origin;
+                                const inviteLink = `${siteUrl}/auth/signup?ref=${inviteCode}`;
+                                navigator.clipboard.writeText(inviteLink);
+                                setInviteCopied(true);
+                                showToast('邀请链接已复制！', 'success');
+                                setTimeout(() => setInviteCopied(false), 2000);
+                            }}
+                            className="flex items-center px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-all whitespace-nowrap flex-shrink-0"
+                        >
+                            {inviteCopied ? <Check size={16} /> : <Copy size={16} />}
+                            <span className="ml-1.5 hidden sm:inline">{inviteCopied ? '已复制' : '复制链接'}</span>
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Tab Navigation - 2x2 grid on mobile */}
             <div className="grid grid-cols-2 md:flex md:space-x-2 gap-2 mb-6">

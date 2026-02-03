@@ -130,19 +130,47 @@ export default function ProductsPage() {
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                         <h3 className="font-bold text-gray-900 mb-4 px-2">商品分类</h3>
                         <div className="space-y-1">
-                            {categories.map((cat) => (
-                                <button
-                                    key={cat}
-                                    onClick={() => { setFilter(cat); setSubFilter('全部'); }}
-                                    className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all flex justify-between items-center group ${filter === cat
-                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-indigo-600'
-                                        }`}
-                                >
-                                    {cat}
-                                    {filter === cat && <ChevronRight size={16} />}
-                                </button>
-                            ))}
+                            {categories.map((cat) => {
+                                const catSubCategories = cat === '全部'
+                                    ? []
+                                    : ['全部', ...Array.from(new Set(products.filter(p => p.category === cat).map(p => p.subCategory).filter(Boolean) as string[]))];
+                                const isExpanded = filter === cat && catSubCategories.length > 1;
+
+                                return (
+                                    <div key={cat}>
+                                        <button
+                                            onClick={() => { setFilter(cat); setSubFilter('全部'); }}
+                                            className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all flex justify-between items-center group ${filter === cat
+                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                                                : 'text-gray-600 hover:bg-gray-50 hover:text-indigo-600'
+                                                }`}
+                                        >
+                                            {cat}
+                                            {catSubCategories.length > 1 && (
+                                                <ChevronDown size={16} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                            )}
+                                            {catSubCategories.length <= 1 && filter === cat && <ChevronRight size={16} />}
+                                        </button>
+                                        {/* Subcategory Dropdown */}
+                                        {isExpanded && (
+                                            <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-indigo-100 pl-3 py-1">
+                                                {catSubCategories.map((sub) => (
+                                                    <button
+                                                        key={sub}
+                                                        onClick={() => setSubFilter(sub)}
+                                                        className={`w-full text-left px-3 py-2 rounded-md text-xs font-medium transition-all ${subFilter === sub
+                                                            ? 'bg-indigo-50 text-indigo-600'
+                                                            : 'text-gray-500 hover:bg-gray-50 hover:text-indigo-600'
+                                                            }`}
+                                                    >
+                                                        {sub === '全部' ? '全部子分类' : sub}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
