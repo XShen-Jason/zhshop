@@ -27,9 +27,6 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
     const [user, setUser] = useState<SupabaseUser | null>(initialUser);
     const [loading, setLoading] = useState(initialUser === undefined);
 
-    // Sync state if prop changes (e.g. server re-render after login)
-
-
     const [points, setPoints] = useState(0);
     const [streak, setStreak] = useState(0);
     const [canCheckIn, setCanCheckIn] = useState(false);
@@ -40,7 +37,6 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
         isBonus: boolean;
     }>({ show: false, pointsEarned: 0, isBonus: false });
 
-    // Prevent duplicate fetches (React StrictMode, fast re-renders)
     const fetchingRef = useRef(false);
 
     const fetchCheckInStatus = useCallback(async () => {
@@ -62,7 +58,6 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
         }
     }, []);
 
-    // Sync state if prop changes (e.g. server re-render after login)
     useEffect(() => {
         if (initialUser !== undefined) {
             setUser(initialUser);
@@ -78,11 +73,9 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
         }
     }, [initialUser, fetchCheckInStatus]);
 
-
     useEffect(() => {
         const supabase = createClient();
 
-        // Get initial session (faster than getUser which verifies with server)
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
             setLoading(false);
@@ -91,11 +84,8 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
             }
         });
 
-        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             setUser(session?.user ?? null);
-            // Only fetch check-in status on explicit SIGNED_IN event, not during INITIAL_SESSION
-            // This prevents "Failed to fetch" errors during auth recovery/refresh
             if (event === 'SIGNED_IN' && session?.user) {
                 fetchCheckInStatus();
             } else if (!session?.user) {
@@ -105,7 +95,6 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
             }
         });
 
-        // Listen for points updates from other components
         const unsubscribePoints = pointsEvents.subscribe((newPoints) => {
             setPoints(newPoints);
         });
@@ -115,6 +104,23 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
             unsubscribePoints();
         };
     }, [fetchCheckInStatus]);
+
+    // Close menu when route changes
+    useEffect(() => {
+        setMobileMenuOpen(false);
+    }, [pathname]);
+
+    // Prevent body scroll when menu is open
+    useEffect(() => {
+        if (mobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [mobileMenuOpen]);
 
     const handleCheckIn = async () => {
         if (!canCheckIn || checkingIn) return;
@@ -134,10 +140,8 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
                     isBonus: data.isStreakBonus
                 });
 
-                // Emit points update to other components
                 pointsEvents.emit(data.newPoints);
 
-                // Hide result after 1.5 seconds (faster)
                 setTimeout(() => {
                     setShowCheckInResult({ show: false, pointsEarned: 0, isBonus: false });
                 }, 1500);
@@ -152,6 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
     const handleLogout = async () => {
         const supabase = createClient();
         await supabase.auth.signOut();
+        setMobileMenuOpen(false);
         router.push('/');
         router.refresh();
     };
@@ -173,13 +178,22 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
 
             <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 backdrop-blur-lg bg-white/80">
                 <div className="max-w-7xl mx-auto px-4">
-                    <div className="flex items-center justify-between h-16">
+                    <div className="flex items-center justify-between h-14 md:h-16">
+                        {/* Mobile menu button */}
+                        <button
+                            onClick={() => setMobileMenuOpen(true)}
+                            className="md:hidden p-2 -ml-2 rounded-lg text-gray-600 hover:bg-gray-100 touch-target"
+                            aria-label="打开菜单"
+                        >
+                            <Menu size={24} />
+                        </button>
+
                         {/* Logo */}
                         <Link href="/" className="flex items-center space-x-2">
                             <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
                                 <ShoppingBag size={18} className="text-white" />
                             </div>
-                            <span className="font-bold text-xl text-gray-900">智汇商城</span>
+                            <span className="font-bold text-lg md:text-xl text-gray-900">智汇商城</span>
                         </Link>
 
                         {/* Desktop Navigation */}
@@ -204,13 +218,12 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
                             })}
                         </div>
 
-                        {/* Auth Section */}
+                        {/* Desktop Auth Section */}
                         <div className="hidden md:flex items-center space-x-2">
                             {loading ? (
                                 <div className="w-8 h-8 rounded-full bg-gray-100 animate-pulse"></div>
                             ) : user ? (
                                 <>
-                                    {/* Points Display - Clickable */}
                                     <Link
                                         href="/points"
                                         className="flex items-center px-3 py-1.5 bg-amber-50 rounded-full border border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition-all"
@@ -219,7 +232,6 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
                                         <span className="text-sm font-bold text-amber-700">{points}</span>
                                     </Link>
 
-                                    {/* Check-in Button */}
                                     <button
                                         onClick={handleCheckIn}
                                         disabled={!canCheckIn || checkingIn}
@@ -259,98 +271,145 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
                             )}
                         </div>
 
-                        {/* Mobile menu button */}
-                        <button
-                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
-                        >
-                            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                        </button>
+                        {/* Mobile: User Center button on right */}
+                        <div className="md:hidden flex items-center">
+                            {!loading && user ? (
+                                <Link
+                                    href="/user"
+                                    className="flex items-center px-2.5 py-1.5 bg-indigo-50 rounded-full border border-indigo-200 hover:bg-indigo-100"
+                                >
+                                    <User size={16} className="text-indigo-600" />
+                                </Link>
+                            ) : !loading ? (
+                                <Link
+                                    href="/auth/login"
+                                    className="flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white"
+                                >
+                                    <LogIn size={14} className="mr-1" />
+                                    登录
+                                </Link>
+                            ) : null}
+                        </div>
                     </div>
+                </div>
+            </nav>
 
-                    {/* Mobile Navigation */}
-                    {mobileMenuOpen && (
-                        <div className="md:hidden py-4 border-t border-gray-100">
-                            {user && (
-                                <div className="flex items-center justify-between px-4 py-3 mb-2 bg-gray-50 rounded-lg mx-2">
+            {/* Mobile Slide-Out Menu */}
+            {mobileMenuOpen && (
+                <div className="fixed inset-0 z-[100] md:hidden">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/50 menu-backdrop open"
+                        onClick={() => setMobileMenuOpen(false)}
+                    />
+
+                    {/* Menu Panel */}
+                    <div className="absolute top-0 left-0 bottom-0 w-72 bg-white shadow-2xl menu-slide open safe-area-top">
+                        {/* Menu Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+                                    <ShoppingBag size={16} className="text-white" />
+                                </div>
+                                <span className="font-bold text-gray-900">智汇商城</span>
+                            </div>
+                            <button
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 touch-target"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* User Section (if logged in) */}
+                        {user && (
+                            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                                <div className="flex items-center justify-between">
                                     <Link
                                         href="/points"
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="flex items-center hover:opacity-70 transition"
+                                        className="flex items-center px-3 py-2 bg-amber-50 rounded-lg border border-amber-200 hover:bg-amber-100"
                                     >
-                                        <Coins size={18} className="text-amber-500 mr-2" />
-                                        <span className="font-bold text-amber-700">{points} 积分</span>
+                                        <Coins size={16} className="text-amber-500 mr-1.5" />
+                                        <span className="font-medium text-sm text-amber-700">积分</span>
                                     </Link>
                                     <button
                                         onClick={handleCheckIn}
                                         disabled={!canCheckIn || checkingIn}
-                                        className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${canCheckIn
+                                        className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium ${canCheckIn
                                             ? 'bg-green-500 text-white'
                                             : 'bg-gray-200 text-gray-400'
                                             }`}
                                     >
-                                        <Calendar size={14} className="mr-1" />
-                                        {canCheckIn ? '签到' : '已签'}
-                                        {!canCheckIn && streak > 0 && <span className="ml-1 text-xs">({streak}天)</span>}
+                                        <Calendar size={16} className="mr-1.5" />
+                                        {canCheckIn ? '签到' : '签到'}
                                     </button>
                                 </div>
-                            )}
+                            </div>
+                        )}
 
+                        {/* Navigation Links */}
+                        <div className="flex-1 overflow-y-auto py-2">
                             {navItems.map((item) => {
                                 const Icon = item.icon;
-                                const isActive = pathname === item.href;
+                                const isActive = pathname === item.href ||
+                                    (item.href !== '/' && pathname.startsWith(item.href));
                                 return (
                                     <Link
                                         key={item.href}
                                         href={item.href}
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className={`flex items-center px-4 py-3 text-sm font-medium ${isActive
-                                            ? 'bg-indigo-50 text-indigo-600'
-                                            : 'text-gray-600 hover:bg-gray-50'
+                                        className={`flex items-center px-4 py-3.5 text-base font-medium transition-colors ${isActive
+                                            ? 'bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600'
+                                            : 'text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
-                                        <Icon size={18} className="mr-3" />
+                                        <Icon size={20} className="mr-3" />
                                         {item.label}
                                     </Link>
                                 );
                             })}
-                            <div className="border-t border-gray-100 mt-2 pt-2">
-                                {user ? (
-                                    <>
-                                        <Link href="/user" className={`flex items-center w-full px-4 py-3 text-sm font-medium ${pathname === '/user' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:bg-gray-50'}`}>
-                                            <User size={18} className="mr-3" />
-                                            个人中心
-                                        </Link>
-                                        <Link href="/groups" className={`flex items-center w-full px-4 py-3 text-sm font-medium ${pathname?.startsWith('/groups') ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:bg-gray-50'}`}>
-                                            <Users size={18} className="mr-3" />
-                                            我的拼团
-                                        </Link>
-                                        <button
-                                            onClick={() => {
-                                                handleLogout();
-                                                setMobileMenuOpen(false);
-                                            }}
-                                            className="flex items-center w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50"
-                                        >
-                                            <LogOut size={18} className="mr-3" />
-                                            退出登录
-                                        </button>
-                                    </>
-                                ) : (
+
+                            {/* Divider */}
+                            <div className="my-2 border-t border-gray-100" />
+
+                            {/* User Actions */}
+                            {user ? (
+                                <>
                                     <Link
-                                        href="/auth/login"
+                                        href="/user"
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="flex items-center px-4 py-3 text-sm font-medium text-indigo-600"
+                                        className={`flex items-center px-4 py-3.5 text-base font-medium ${pathname === '/user'
+                                            ? 'bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600'
+                                            : 'text-gray-700 hover:bg-gray-50'
+                                            }`}
                                     >
-                                        <LogIn size={18} className="mr-3" />
-                                        登录 / 注册
+                                        <User size={20} className="mr-3" />
+                                        个人中心
                                     </Link>
-                                )}
-                            </div>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="flex items-center w-full px-4 py-3.5 text-base font-medium text-red-600 hover:bg-red-50"
+                                    >
+                                        <LogOut size={20} className="mr-3" />
+                                        退出登录
+                                    </button>
+                                </>
+                            ) : (
+                                <Link
+                                    href="/auth/login"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center px-4 py-3.5 text-base font-medium text-indigo-600"
+                                >
+                                    <LogIn size={20} className="mr-3" />
+                                    登录 / 注册
+                                </Link>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
-            </nav>
+            )}
         </>
     );
 };
+

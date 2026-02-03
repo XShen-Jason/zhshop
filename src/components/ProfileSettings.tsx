@@ -101,100 +101,100 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
     };
 
     return (
-        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-8">
-            <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50">
-                <div className="flex justify-between items-start">
+        <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-6 md:mb-8">
+            <div className="px-4 md:px-8 py-4 md:py-6 border-b border-gray-100 bg-gray-50/50">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3 md:gap-0">
                     <div>
-                        <h3 className="font-bold text-xl text-gray-800 flex items-center">
-                            <User className="mr-2 text-indigo-600" /> 个人信息设置
+                        <h3 className="font-bold text-lg md:text-xl text-gray-800 flex items-center">
+                            <User className="mr-2 text-indigo-600" size={20} /> 个人信息设置
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1">完善联系方式，方便管理员与您取得联系</p>
+                        <p className="text-xs md:text-sm text-gray-500 mt-1">完善联系方式，方便管理员与您取得联系</p>
                     </div>
                     <button
                         type="button"
                         onClick={() => setShowPasswordModal(true)}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition flex items-center gap-2 text-sm font-medium"
+                        className="px-3 md:px-4 py-1.5 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg md:rounded-xl transition flex items-center gap-1.5 md:gap-2 text-xs md:text-sm font-medium w-fit"
                     >
-                        <Lock size={16} />
+                        <Lock size={14} className="md:w-4 md:h-4" />
                         修改密码
                     </button>
                 </div>
             </div>
 
-            <form onSubmit={handleSave} className="p-8 space-y-6 max-w-2xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSave} className="p-4 md:p-8 space-y-4 md:space-y-6 max-w-2xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     {/* QQ */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                            <MessageCircle size={16} className="mr-2 text-blue-500" /> QQ
+                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2 flex items-center">
+                            <MessageCircle size={14} className="mr-1.5 md:mr-2 text-blue-500 md:w-4 md:h-4" /> QQ
                         </label>
                         <input
                             type="text"
                             value={qq}
                             onChange={e => setQq(e.target.value)}
                             placeholder="请输入QQ号"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition outline-none"
+                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition outline-none text-sm"
                         />
                     </div>
 
                     {/* WeChat */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                            <MessageCircle size={16} className="mr-2 text-green-500" /> 微信 (WeChat)
+                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2 flex items-center">
+                            <MessageCircle size={14} className="mr-1.5 md:mr-2 text-green-500 md:w-4 md:h-4" /> 微信
                         </label>
                         <input
                             type="text"
                             value={wechat}
                             onChange={e => setWechat(e.target.value)}
                             placeholder="请输入微信号"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:bg-white transition outline-none"
+                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-green-500 focus:bg-white transition outline-none text-sm"
                         />
                     </div>
 
                     {/* Telegram */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                            <Send size={16} className="mr-2 text-sky-500" /> Telegram
+                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2 flex items-center">
+                            <Send size={14} className="mr-1.5 md:mr-2 text-sky-500 md:w-4 md:h-4" /> Telegram
                         </label>
                         <div className="relative">
-                            <span className="absolute left-4 top-3.5 text-gray-400">@</span>
+                            <span className="absolute left-3 md:left-4 top-2.5 md:top-3.5 text-gray-400 text-sm">@</span>
                             <input
                                 type="text"
                                 value={telegram.replace(/^@/, '')}
                                 onChange={e => setTelegram(e.target.value)}
                                 placeholder="username"
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:bg-white transition outline-none"
+                                className="w-full pl-8 md:pl-10 pr-3 md:pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-sky-500 focus:bg-white transition outline-none text-sm"
                             />
                         </div>
                     </div>
 
                     {/* Phone */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                            <Phone size={16} className="mr-2 text-indigo-500" /> 手机号
+                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2 flex items-center">
+                            <Phone size={14} className="mr-1.5 md:mr-2 text-indigo-500 md:w-4 md:h-4" /> 手机号
                         </label>
                         <input
                             type="tel"
                             value={phone}
                             onChange={e => setPhone(e.target.value)}
                             placeholder="请输入手机号码"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition outline-none"
+                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition outline-none text-sm"
                         />
                     </div>
 
                     {/* Email */}
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                            <Mail size={16} className="mr-2 text-amber-500" /> 电子邮箱
+                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2 flex items-center">
+                            <Mail size={14} className="mr-1.5 md:mr-2 text-amber-500 md:w-4 md:h-4" /> 电子邮箱
                         </label>
                         <input
                             type="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             placeholder="example@email.com"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white transition outline-none"
+                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white transition outline-none text-sm"
                         />
-                        <p className="text-xs text-gray-400 mt-1 ml-1">默认为注册邮箱，可修改</p>
+                        <p className="text-[10px] md:text-xs text-gray-400 mt-1 ml-1">默认为注册邮箱，可修改</p>
                     </div>
 
                     {/* Custom Contacts */}
@@ -256,21 +256,21 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
                     </div>
                 </div>
 
-                <div className="pt-4 flex items-center justify-between border-t border-gray-100">
+                <div className="pt-4 flex flex-col-reverse md:flex-row items-stretch md:items-center justify-between gap-3 md:gap-0 border-t border-gray-100">
                     {success ? (
-                        <div className="flex items-center text-green-600 font-medium animate-in fade-in slide-in-from-left-2">
-                            <CheckCircle className="mr-2" /> 保存成功
+                        <div className="flex items-center text-green-600 font-medium animate-in fade-in slide-in-from-left-2 text-sm">
+                            <CheckCircle className="mr-2" size={18} /> 保存成功
                         </div>
                     ) : (
-                        <div className="text-sm text-gray-400">请确保填写正确，以便及时接收通知</div>
+                        <div className="text-xs md:text-sm text-gray-400 text-center md:text-left">请确保填写正确，以便及时接收通知</div>
                     )}
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 transition-all transform active:scale-95 flex items-center"
+                        className="px-6 md:px-8 py-2.5 md:py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 transition-all transform active:scale-95 flex items-center justify-center text-sm md:text-base"
                     >
-                        {loading ? '保存中...' : <><Save size={18} className="mr-2" /> 保存设置</>}
+                        {loading ? '保存中...' : <><Save size={16} className="mr-2 md:w-[18px] md:h-[18px]" /> 保存</>}
                     </button>
                 </div>
             </form>

@@ -101,22 +101,22 @@ export default function HomePage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        <div className="max-w-7xl mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-8">
             {/* Hero Banner */}
-            <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white via-indigo-50/50 to-purple-50/50">
-                <div className="p-8 md:p-10 flex flex-col md:flex-row justify-between items-center">
+            <section className="relative overflow-hidden rounded-xl md:rounded-2xl border border-gray-200 bg-gradient-to-br from-white via-indigo-50/50 to-purple-50/50">
+                <div className="p-5 md:p-10 flex flex-col md:flex-row justify-between items-center">
                     <div className="max-w-xl">
-                        <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-gray-900">
+                        <h1 className="text-xl md:text-4xl font-extrabold mb-2 md:mb-3 text-gray-900">
                             探索数字资产的<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">无限可能</span>
                         </h1>
-                        <p className="text-gray-600 mb-5">一站式数字商品交易平台，提供优质教程、拼车合租与积分抽奖服务。</p>
-                        <div className="flex gap-3">
-                            <Link href="/products" className="bg-indigo-600 text-white px-6 py-2.5 rounded-full font-bold shadow hover:bg-indigo-700 transition flex items-center">
-                                浏览商店 <ShoppingBag size={16} className="ml-2" />
+                        <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-5">一站式数字商品交易平台，提供优质教程、拼车合租与积分抽奖服务。</p>
+                        <div className="flex flex-wrap gap-2 md:gap-3">
+                            <Link href="/products" className="bg-indigo-600 text-white px-4 md:px-6 py-2 md:py-2.5 rounded-full text-sm md:text-base font-bold shadow hover:bg-indigo-700 transition flex items-center">
+                                浏览商店 <ShoppingBag size={14} className="ml-1.5 md:ml-2 md:w-4 md:h-4" />
                             </Link>
                             {siteConfig.telegram_link && (
-                                <a href={siteConfig.telegram_link} target="_blank" rel="noreferrer" className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-full font-bold hover:bg-gray-50 transition flex items-center">
-                                    加入社群 <Users size={16} className="ml-2" />
+                                <a href={siteConfig.telegram_link} target="_blank" rel="noreferrer" className="bg-white border border-gray-200 text-gray-700 px-4 md:px-6 py-2 md:py-2.5 rounded-full text-sm md:text-base font-bold hover:bg-gray-50 transition flex items-center">
+                                    加入社群 <Users size={14} className="ml-1.5 md:ml-2 md:w-4 md:h-4" />
                                 </a>
                             )}
                         </div>
@@ -126,88 +126,88 @@ export default function HomePage() {
             </section>
 
             {/* Row 1: Groups + Lotteries */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
                 {/* Groups Section */}
-                <section className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                        <h2 className="text-lg font-bold text-gray-900 flex items-center">
-                            <Users size={18} className="mr-2 text-green-600" /> 拼团
+                <section className="bg-white rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="p-3 md:p-4 border-b border-gray-100 flex justify-between items-center">
+                        <h2 className="text-base md:text-lg font-bold text-gray-900 flex items-center">
+                            <Users size={16} className="mr-1.5 md:mr-2 text-green-600 md:w-[18px] md:h-[18px]" /> 拼团
                         </h2>
-                        <Link href="/groups" className="text-sm text-indigo-600 hover:underline flex items-center">
-                            全部 <ArrowRight size={14} className="ml-1" />
+                        <Link href="/groups" className="text-xs md:text-sm text-indigo-600 hover:underline flex items-center">
+                            全部 <ArrowRight size={12} className="ml-0.5 md:ml-1 md:w-3.5 md:h-3.5" />
                         </Link>
                     </div>
-                    <div className="p-4 space-y-3">
+                    <div className="p-3 md:p-4 space-y-2 md:space-y-3">
                         {activeGroups.map(g => (
                             <Link key={g.id} href={`/groups/${g.id}`}>
-                                <div className="p-3 rounded-lg border border-gray-100 hover:border-green-200 hover:bg-green-50/30 transition">
+                                <div className="p-2.5 md:p-3 rounded-lg border border-gray-100 hover:border-green-200 hover:bg-green-50/30 transition">
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="font-bold text-gray-800 text-sm line-clamp-1">{g.title}</h3>
-                                        <Badge status={g.status} />
+                                        <h3 className="font-bold text-gray-800 text-xs md:text-sm line-clamp-1">{g.title}</h3>
+                                        <Badge status={g.status} className="text-[10px] md:text-xs" />
                                     </div>
-                                    <div className="flex justify-between items-center text-xs text-gray-500">
+                                    <div className="flex justify-between items-center text-[10px] md:text-xs text-gray-500">
                                         <span>￥{g.price}</span>
                                         <span className="text-green-600 font-medium">{g.currentCount}/{g.targetCount} 人</span>
                                     </div>
                                 </div>
                             </Link>
                         ))}
-                        {activeGroups.length === 0 && <p className="text-gray-400 text-sm text-center py-6">暂无进行中的拼团</p>}
+                        {activeGroups.length === 0 && <p className="text-gray-400 text-xs md:text-sm text-center py-4 md:py-6">暂无进行中的拼团</p>}
                     </div>
                 </section>
 
                 {/* Lotteries Section */}
-                <section className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                        <h2 className="text-lg font-bold text-gray-900 flex items-center">
-                            <Gift size={18} className="mr-2 text-amber-500" /> 抽奖
+                <section className="bg-white rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="p-3 md:p-4 border-b border-gray-100 flex justify-between items-center">
+                        <h2 className="text-base md:text-lg font-bold text-gray-900 flex items-center">
+                            <Gift size={16} className="mr-1.5 md:mr-2 text-amber-500 md:w-[18px] md:h-[18px]" /> 抽奖
                         </h2>
-                        <Link href="/lottery" className="text-sm text-indigo-600 hover:underline flex items-center">
-                            全部 <ArrowRight size={14} className="ml-1" />
+                        <Link href="/lottery" className="text-xs md:text-sm text-indigo-600 hover:underline flex items-center">
+                            全部 <ArrowRight size={12} className="ml-0.5 md:ml-1 md:w-3.5 md:h-3.5" />
                         </Link>
                     </div>
-                    <div className="p-4 space-y-3">
+                    <div className="p-3 md:p-4 space-y-2 md:space-y-3">
                         {activeLotteries.map(l => (
                             <Link key={l.id} href={`/lottery/${l.id}`}>
-                                <div className="p-3 rounded-lg border border-gray-100 hover:border-amber-200 hover:bg-amber-50/30 transition">
+                                <div className="p-2.5 md:p-3 rounded-lg border border-gray-100 hover:border-amber-200 hover:bg-amber-50/30 transition">
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="font-bold text-gray-800 text-sm line-clamp-1">{l.title}</h3>
+                                        <h3 className="font-bold text-gray-800 text-xs md:text-sm line-clamp-1">{l.title}</h3>
                                         <div className="flex gap-1">
-                                            {l.hasEntered && <Badge status="已参与" className="bg-green-100 text-green-700 border-green-200" />}
-                                            <Badge status={l.status} />
+                                            {l.hasEntered && <Badge status="已参与" className="bg-green-100 text-green-700 border-green-200 text-[10px] md:text-xs" />}
+                                            <Badge status={l.status} className="text-[10px] md:text-xs" />
                                         </div>
                                     </div>
-                                    <div className="flex justify-between items-center text-xs text-gray-500">
-                                        <span className="flex items-center"><Clock size={12} className="mr-1" />{l.drawDate?.split('T')[0]}</span>
+                                    <div className="flex justify-between items-center text-[10px] md:text-xs text-gray-500">
+                                        <span className="flex items-center"><Clock size={10} className="mr-0.5 md:mr-1 md:w-3 md:h-3" />{l.drawDate?.split('T')[0]}</span>
                                         <span>{l.entryCost} 积分</span>
                                     </div>
                                 </div>
                             </Link>
                         ))}
-                        {activeLotteries.length === 0 && <p className="text-gray-400 text-sm text-center py-6">暂无待开奖的抽奖</p>}
+                        {activeLotteries.length === 0 && <p className="text-gray-400 text-xs md:text-sm text-center py-4 md:py-6">暂无待开奖的抽奖</p>}
                     </div>
                 </section>
             </div>
 
             {/* Row 2: Products (Full Width) */}
-            <section className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-                <div className="p-5 border-b border-gray-100 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                        <ShoppingBag size={20} className="mr-2 text-indigo-600" /> 商品
+            <section className="bg-white rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
+                <div className="p-3 md:p-5 border-b border-gray-100 flex justify-between items-center">
+                    <h2 className="text-base md:text-xl font-bold text-gray-900 flex items-center">
+                        <ShoppingBag size={16} className="mr-1.5 md:mr-2 text-indigo-600 md:w-5 md:h-5" /> 商品
                     </h2>
-                    <Link href="/products" className="text-sm text-indigo-600 hover:underline flex items-center">
-                        全部 <ArrowRight size={14} className="ml-1" />
+                    <Link href="/products" className="text-xs md:text-sm text-indigo-600 hover:underline flex items-center">
+                        全部 <ArrowRight size={12} className="ml-0.5 md:ml-1 md:w-3.5 md:h-3.5" />
                     </Link>
                 </div>
                 {/* Enhanced Category Tabs */}
                 <div className="flex flex-col border-b border-gray-100 bg-gray-50/50 rounded-t-xl overflow-hidden">
                     {/* Main Categories */}
-                    <div className="px-5 py-3 flex gap-4 overflow-x-auto hide-scrollbar">
+                    <div className="px-3 md:px-5 py-2 md:py-3 flex gap-2 md:gap-4 overflow-x-auto hide-scrollbar">
                         {categories.map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => { setProductCategory(cat); setProductSubCategory('全部'); }}
-                                className={`relative px-2 py-2 text-sm font-bold whitespace-nowrap transition-colors ${productCategory === cat
+                                className={`relative px-1.5 md:px-2 py-1.5 md:py-2 text-xs md:text-sm font-bold whitespace-nowrap transition-colors ${productCategory === cat
                                     ? 'text-indigo-600'
                                     : 'text-gray-500 hover:text-gray-800'
                                     }`}
@@ -221,12 +221,12 @@ export default function HomePage() {
                     </div>
                     {/* Sub Categories */}
                     {subCategories.length > 1 && (
-                        <div className="px-5 pb-3 flex gap-2 overflow-x-auto hide-scrollbar animate-fade-in">
+                        <div className="px-3 md:px-5 pb-2 md:pb-3 flex gap-1.5 md:gap-2 overflow-x-auto hide-scrollbar animate-fade-in">
                             {subCategories.map(sub => (
                                 <button
                                     key={sub}
                                     onClick={() => setProductSubCategory(sub)}
-                                    className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all border ${productSubCategory === sub
+                                    className={`px-2.5 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-medium whitespace-nowrap transition-all border ${productSubCategory === sub
                                         ? 'bg-white border-indigo-200 text-indigo-700 shadow-sm'
                                         : 'bg-transparent border-transparent text-gray-500 hover:bg-white hover:text-gray-700'
                                         }`}
@@ -238,57 +238,57 @@ export default function HomePage() {
                     )}
                 </div>
 
-                {/* Product Grid - max 8 items (4 cols x 2 rows) */}
-                <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {/* Product Grid - 2 columns on mobile, 4 on large */}
+                <div className="p-3 md:p-5 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-5">
                     {filteredProducts.slice(0, 8).map(p => (
                         <Link key={p.id} href={`/products/${p.id}`}>
                             <Card className="group h-full flex flex-col hover:shadow-lg transition-all duration-300 border-transparent hover:border-indigo-100">
-                                <div className="p-4 flex-1 flex flex-col">
-                                    <div className="flex justify-between items-start gap-2 mb-2">
+                                <div className="p-2.5 md:p-4 flex-1 flex flex-col">
+                                    <div className="flex justify-between items-start gap-1 md:gap-2 mb-1.5 md:mb-2">
                                         <div className="flex flex-col min-w-0 flex-1">
-                                            <h3 className="font-bold text-gray-800 group-hover:text-indigo-600 transition truncate">{p.title}</h3>
-                                            {(p.subCategory) && <span className="text-[10px] text-gray-400 font-medium truncate">{p.subCategory}</span>}
+                                            <h3 className="font-bold text-xs md:text-base text-gray-800 group-hover:text-indigo-600 transition truncate">{p.title}</h3>
+                                            {(p.subCategory) && <span className="text-[9px] md:text-[10px] text-gray-400 font-medium truncate">{p.subCategory}</span>}
                                         </div>
-                                        <Badge status={isAvailable(p) ? '有货' : '无货'} className={`shrink-0 whitespace-nowrap ${isAvailable(p) ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-400'}`} />
+                                        <Badge status={isAvailable(p) ? '有货' : '无货'} className={`shrink-0 whitespace-nowrap text-[9px] md:text-xs ${isAvailable(p) ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-400'}`} />
                                     </div>
-                                    <p className="text-xs text-gray-500 line-clamp-2 mb-3 mt-1 flex-1">{p.description}</p>
-                                    <div className="flex justify-between items-center mt-auto pt-3 border-t border-gray-50">
-                                        <span className="text-lg font-bold text-gray-900">￥{p.price}</span>
-                                        {typeof p.stock === 'number' && <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded">库存: {p.stock}</span>}
+                                    <p className="hidden md:block text-xs text-gray-500 line-clamp-2 mb-3 mt-1 flex-1">{p.description}</p>
+                                    <div className="flex justify-between items-center mt-auto pt-2 md:pt-3 border-t border-gray-50">
+                                        <span className="text-sm md:text-lg font-bold text-gray-900">￥{p.price}</span>
+                                        {typeof p.stock === 'number' && <span className="hidden md:inline text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded">库存: {p.stock}</span>}
                                     </div>
                                 </div>
                             </Card>
                         </Link>
                     ))}
                     {filteredProducts.length === 0 && (
-                        <div className="col-span-4 text-center text-gray-400 py-10">暂无商品</div>
+                        <div className="col-span-2 md:col-span-4 text-center text-gray-400 text-sm py-6 md:py-10">暂无商品</div>
                     )}
                 </div>
             </section>
 
             {/* Row 3: Tutorials (2 items) */}
-            <section className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-                <div className="p-5 border-b border-gray-100 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                        <BookOpen size={20} className="mr-2 text-blue-600" /> 最新教程
+            <section className="bg-white rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
+                <div className="p-3 md:p-5 border-b border-gray-100 flex justify-between items-center">
+                    <h2 className="text-base md:text-xl font-bold text-gray-900 flex items-center">
+                        <BookOpen size={16} className="mr-1.5 md:mr-2 text-blue-600 md:w-5 md:h-5" /> 最新教程
                     </h2>
-                    <Link href="/tutorials" className="text-sm text-indigo-600 hover:underline flex items-center">
-                        全部 <ArrowRight size={14} className="ml-1" />
+                    <Link href="/tutorials" className="text-xs md:text-sm text-indigo-600 hover:underline flex items-center">
+                        全部 <ArrowRight size={12} className="ml-0.5 md:ml-1 md:w-3.5 md:h-3.5" />
                     </Link>
                 </div>
-                <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="p-3 md:p-5 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                     {tutorials.slice(0, 2).map(t => (
                         <Link key={t.id} href={`/tutorials/${t.id}`}>
-                            <div className="p-5 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition h-full">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <span className="text-xs font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded">{t.category}</span>
+                            <div className="p-3 md:p-5 rounded-lg md:rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition h-full">
+                                <div className="flex items-center gap-2 mb-2 md:mb-3">
+                                    <span className="text-[10px] md:text-xs font-bold bg-blue-50 text-blue-600 px-1.5 md:px-2 py-0.5 md:py-1 rounded">{t.category}</span>
                                 </div>
-                                <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1">{t.title}</h3>
-                                <p className="text-sm text-gray-500 line-clamp-2">{t.summary}</p>
+                                <h3 className="font-bold text-sm md:text-lg text-gray-800 mb-1 md:mb-2 line-clamp-1">{t.title}</h3>
+                                <p className="text-xs md:text-sm text-gray-500 line-clamp-2">{t.summary}</p>
                             </div>
                         </Link>
                     ))}
-                    {tutorials.length === 0 && <p className="col-span-2 text-gray-400 text-center py-10">暂无教程</p>}
+                    {tutorials.length === 0 && <p className="col-span-2 text-gray-400 text-xs md:text-sm text-center py-6 md:py-10">暂无教程</p>}
                 </div>
             </section>
         </div>

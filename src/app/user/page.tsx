@@ -229,47 +229,47 @@ export default function UserPage() {
                 </Card>
             </div>
 
-            {/* Tab Navigation */}
-            <div className="flex space-x-2 mb-6 overflow-x-auto pb-2 md:pb-0">
+            {/* Tab Navigation - 2x2 grid on mobile */}
+            <div className="grid grid-cols-2 md:flex md:space-x-2 gap-2 mb-6">
                 <button
                     onClick={() => setActiveTab('orders')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'orders'
+                    className={`px-3 md:px-5 py-2 rounded-lg md:rounded-full text-xs md:text-sm font-medium transition-all flex items-center justify-center ${activeTab === 'orders'
                         ? 'bg-indigo-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                 >
-                    <ShoppingBag size={16} className="inline mr-2" />
-                    订单记录
+                    <ShoppingBag size={14} className="mr-1 md:mr-2 md:w-4 md:h-4" />
+                    订单
                 </button>
                 <button
                     onClick={() => setActiveTab('groups')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'groups'
+                    className={`px-3 md:px-5 py-2 rounded-lg md:rounded-full text-xs md:text-sm font-medium transition-all flex items-center justify-center ${activeTab === 'groups'
                         ? 'bg-indigo-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                 >
-                    <Users size={16} className="inline mr-2" />
-                    拼团记录
+                    <Users size={14} className="mr-1 md:mr-2 md:w-4 md:h-4" />
+                    拼团
                 </button>
                 <button
                     onClick={() => setActiveTab('lotteries')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'lotteries'
+                    className={`px-3 md:px-5 py-2 rounded-lg md:rounded-full text-xs md:text-sm font-medium transition-all flex items-center justify-center ${activeTab === 'lotteries'
                         ? 'bg-pink-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                 >
-                    <Gift size={16} className="inline mr-2" />
-                    抽奖记录
+                    <Gift size={14} className="mr-1 md:mr-2 md:w-4 md:h-4" />
+                    抽奖
                 </button>
                 <button
                     onClick={() => setActiveTab('contacts')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'contacts'
+                    className={`px-3 md:px-5 py-2 rounded-lg md:rounded-full text-xs md:text-sm font-medium transition-all flex items-center justify-center ${activeTab === 'contacts'
                         ? 'bg-teal-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                 >
-                    <UserIcon size={16} className="inline mr-2" />
-                    个人信息
+                    <UserIcon size={14} className="mr-1 md:mr-2 md:w-4 md:h-4" />
+                    信息
                 </button>
             </div>
 

@@ -3,6 +3,11 @@
 :root {
   --background: #f9fafb;
   --foreground: #111827;
+  /* Mobile-specific spacing */
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --mobile-nav-height: 56px;
+  --mobile-touch-target: 44px;
 }
 
 @theme inline {
@@ -16,4 +21,89 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+}
+
+/* ===== Mobile-First Utilities ===== */
+
+/* Hide scrollbar but allow scrolling */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prevent zoom on input focus (iOS Safari) */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Touch-friendly minimum tap target */
+.touch-target {
+  min-height: var(--mobile-touch-target);
+  min-width: var(--mobile-touch-target);
+}
+
+/* ===== Slide-Out Menu Animations ===== */
+
+/* Backdrop fade */
+.menu-backdrop {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.menu-backdrop.open {
+  opacity: 1;
+}
+
+/* Menu slide from left */
+.menu-slide {
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.menu-slide.open {
+  transform: translateX(0);
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* ===== Mobile Layout Helpers ===== */
+
+/* Safe area padding for notched devices */
+.safe-area-bottom {
+  padding-bottom: var(--safe-area-inset-bottom);
+}
+.safe-area-top {
+  padding-top: var(--safe-area-inset-top);
+}
+
+/* Mobile card grid - 2 columns */
+@media screen and (max-width: 640px) {
+  .mobile-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Fluid typography */
+.text-fluid-lg {
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
+}
+.text-fluid-xl {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+}
+.text-fluid-2xl {
+  font-size: clamp(1.75rem, 6vw, 2.5rem);
 }

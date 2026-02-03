@@ -554,23 +554,23 @@ export default function AdminPage() {
 
     // --- Renderers ---
     const renderOverview = () => (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                    <p className="text-sm text-gray-500">待处理订单</p>
-                    <h3 className="text-2xl font-bold text-amber-600">{orders.filter(o => o.status === '待联系').length}</h3>
+        <div className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+                <div className="bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-200">
+                    <p className="text-xs md:text-sm text-gray-500">待处理订单</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-amber-600">{orders.filter(o => o.status === '待联系').length}</h3>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                    <p className="text-sm text-gray-500">商品总数</p>
-                    <h3 className="text-2xl font-bold text-blue-600">{products.length}</h3>
+                <div className="bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-200">
+                    <p className="text-xs md:text-sm text-gray-500">商品总数</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-blue-600">{products.length}</h3>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                    <p className="text-sm text-gray-500">进行中拼团</p>
-                    <h3 className="text-2xl font-bold text-purple-600">{groups.filter(g => g.status === '进行中').length}</h3>
+                <div className="bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-200">
+                    <p className="text-xs md:text-sm text-gray-500">进行中拼团</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-purple-600">{groups.filter(g => g.status === '进行中').length}</h3>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                    <p className="text-sm text-gray-500">待开奖活动</p>
-                    <h3 className="text-2xl font-bold text-pink-600">{lotteries.filter(l => l.status === '待开奖').length}</h3>
+                <div className="bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-200">
+                    <p className="text-xs md:text-sm text-gray-500">待开奖活动</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-pink-600">{lotteries.filter(l => l.status === '待开奖').length}</h3>
                 </div>
             </div>
 
@@ -1377,7 +1377,8 @@ export default function AdminPage() {
 
 
     return (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen flex-col md:flex-row">
+            {/* Desktop Sidebar - Hidden on mobile */}
             <aside className="w-64 bg-white border-r border-gray-200 flex-shrink-0 hidden md:block">
                 <div className="p-6 border-b border-gray-100">
                     <h1 className="text-xl font-bold text-gray-900">管理后台</h1>
@@ -1398,7 +1399,33 @@ export default function AdminPage() {
                     ))}
                 </nav>
             </aside>
-            <main className="flex-1 bg-gray-100 p-8 overflow-y-auto">
+
+            {/* Mobile Bottom Navigation */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 flex justify-around py-2 px-1 shadow-lg">
+                {[
+                    { id: 'overview', icon: Activity, label: '总览' },
+                    { id: 'orders', icon: ShoppingCart, label: '订单' },
+                    { id: 'products', icon: Box, label: '商品' },
+                    { id: 'groups', icon: Users2, label: '拼团' },
+                    { id: 'lotteries', icon: Gift, label: '抽奖' },
+                    { id: 'tutorials', icon: FileText, label: '教程' },
+                ].map(item => (
+                    <button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id as any)}
+                        className={`flex flex-col items-center justify-center px-2 py-1 rounded-lg transition-colors ${activeTab === item.id
+                            ? 'text-indigo-600 bg-indigo-50'
+                            : 'text-gray-500'
+                            }`}
+                    >
+                        <item.icon size={18} />
+                        <span className="text-[10px] mt-0.5">{item.label}</span>
+                    </button>
+                ))}
+            </nav>
+
+            {/* Main Content - Adjusted padding for mobile */}
+            <main className="flex-1 bg-gray-100 p-4 md:p-8 overflow-y-auto pb-20 md:pb-8">
                 {activeTab === 'overview' && renderOverview()}
                 {activeTab === 'orders' && renderOrders()}
                 {activeTab === 'products' && renderProducts()}
