@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // GET user's group participation records
 export async function GET() {
@@ -151,9 +152,10 @@ export async function PUT(request: Request) {
                 return NextResponse.json({ error: `名额不足，最多可增加 ${available} 个` }, { status: 400 });
             }
 
-            // Update quantity on existing entry or insert new one
+            // Update quantity on existing entry or insert new one (use admin client)
+            const adminClient = createAdminClient();
             if (existingEntry) {
-                await supabase
+                await adminClient
                     .from('group_participants')
                     .update({
                         quantity: newQuantity,
@@ -162,7 +164,7 @@ export async function PUT(request: Request) {
                     .eq('id', existingEntry.id);
             } else {
                 // No existing entry - create one
-                await supabase.from('group_participants').insert({
+                await adminClient.from('group_participants').insert({
                     group_id: groupId,
                     user_id: user.id,
                     quantity: newQuantity,
@@ -172,7 +174,7 @@ export async function PUT(request: Request) {
 
             // Update group count
             const newCount = (group.current_count || 0) + diff;
-            await supabase.from('group_buys').update({
+            await adminClient.from('group_buys').update({
                 current_count: newCount
             }).eq('id', groupId);
 
@@ -187,8 +189,8 @@ export async function PUT(request: Request) {
                     .single();
 
                 if (fullGroup) {
-                    // 锁团
-                    await supabase.from('group_buys').update({ status: '已锁单' }).eq('id', groupId);
+                    // 锁团 (use admin client)
+                    await adminClient.from('group_buys').update({ status: '已锁单' }).eq('id', groupId);
 
                     if (fullGroup.auto_renew) {
                         // 获取基础标题（去掉 #N 后缀）
@@ -218,8 +220,8 @@ export async function PUT(request: Request) {
                             const batchNumber = (count || 0) + 1;
                             const newTitle = `${baseTitle} #${batchNumber}`;
 
-                            // 创建新团
-                            await supabase.from('group_buys').insert({
+                            // 创建新团 (use admin client)
+                            await adminClient.from('group_buys').insert({
                                 title: newTitle,
                                 price: fullGroup.price,
                                 description: fullGroup.description,
@@ -243,9 +245,10 @@ export async function PUT(request: Request) {
                 return NextResponse.json({ error: '不能减少到0，请使用取消参与功能' }, { status: 400 });
             }
 
-            // Update quantity on existing entry
+            // Update quantity on existing entry (use admin client - moved outside scope if needed)
+            const adminClientForDecrease = createAdminClient();
             if (existingEntry) {
-                await supabase
+                await adminClientForDecrease
                     .from('group_participants')
                     .update({ quantity: newQuantity })
                     .eq('id', existingEntry.id);
@@ -254,7 +257,7 @@ export async function PUT(request: Request) {
             // Update group count and status
             const newCount = Math.max(0, (group.current_count || 0) + diff);
             const newStatus = newCount >= group.target_count ? '已锁单' : '进行中';
-            await supabase.from('group_buys').update({
+            await adminClientForDecrease.from('group_buys').update({
                 current_count: newCount,
                 status: newStatus
             }).eq('id', groupId);
@@ -314,8 +317,9 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: '您未参与此团' }, { status: 400 });
         }
 
-        // Delete user's entries
-        const { error: deleteError } = await supabase
+        // Use admin client to bypass RLS for delete operation
+        const adminClient = createAdminClient();
+        const { error: deleteError } = await adminClient
             .from('group_participants')
             .delete()
             .eq('group_id', groupId)
@@ -398,24 +402,24 @@ export async function DELETE(request: Request) {
                 // 更新本团人数
                 newCount += totalMigrated;
 
-                // 更新子团人数
-                const { data: childGroupData } = await supabase
+                // 更新子团人数 (use admin client)
+                const { data: childGroupData } = await adminClient
                     .from('group_buys')
                     .select('current_count')
                     .eq('id', childGroup.id)
                     .single();
 
                 if (childGroupData) {
-                    await supabase.from('group_buys').update({
+                    await adminClient.from('group_buys').update({
                         current_count: Math.max(0, (childGroupData.current_count || 0) - totalMigrated)
                     }).eq('id', childGroup.id);
                 }
             }
         }
 
-        // 更新本团人数和状态
+        // 更新本团人数和状态 (use admin client)
         const newStatus = newCount >= targetCount ? '已锁单' : '进行中';
-        await supabase.from('group_buys').update({
+        await adminClient.from('group_buys').update({
             current_count: newCount,
             status: newStatus
         }).eq('id', groupId);
