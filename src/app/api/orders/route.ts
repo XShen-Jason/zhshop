@@ -142,12 +142,15 @@ export async function POST(request: Request) {
 
         // Handle Group Buy logic
         if (body.itemType === 'GROUP' && body.itemId) {
+            // Use Admin Client for all Group operations to bypass RLS on system tables
+            const adminClient = createAdminClient();
+
             const count = body.quantity || 1;
             let targetGroupId = body.itemId;
             let migratedTo: string | null = null;
 
             // 获取当前团信息
-            const { data: currentGroup } = await supabase
+            const { data: currentGroup } = await adminClient
                 .from('group_buys')
                 .select('*')
                 .eq('id', body.itemId)
@@ -159,7 +162,7 @@ export async function POST(request: Request) {
 
                 // ========== 自动迁移逻辑 ==========
                 // 查找同系列中更早创建的、未满员的团
-                const { data: earlierUnfilledGroups } = await supabase
+                const { data: earlierUnfilledGroups } = await adminClient
                     .from('group_buys')
                     .select('id, title, current_count, target_count, created_at')
                     .ilike('title', `${baseTitle}%`)
@@ -180,12 +183,12 @@ export async function POST(request: Request) {
                 }
             }
 
-            // Add single participant record with quantity (unique constraint requires one row per user per group)
-            const { error: participantError } = await supabase
+            // Add single participant record with quantity
+            const { error: participantError } = await adminClient
                 .from('group_participants')
                 .insert({
                     group_id: targetGroupId,
-                    user_id: user?.id || null,
+                    user_id: user?.id || null, // Authenticated user ID
                     contact_info: body.contact,
                     quantity: count
                 });
@@ -194,7 +197,7 @@ export async function POST(request: Request) {
                 console.error('Error adding group participants:', participantError);
             } else {
                 // 更新目标团人数
-                const { data: allParticipants } = await supabase
+                const { data: allParticipants } = await adminClient
                     .from('group_participants')
                     .select('quantity')
                     .eq('group_id', targetGroupId);
@@ -203,13 +206,13 @@ export async function POST(request: Request) {
                     (sum, p) => sum + (p.quantity || 1), 0
                 );
 
-                await supabase
+                await adminClient
                     .from('group_buys')
                     .update({ current_count: actualCount })
                     .eq('id', targetGroupId);
 
                 // 获取目标团完整信息
-                const { data: fullGroup } = await supabase
+                const { data: fullGroup } = await adminClient
                     .from('group_buys')
                     .select('*')
                     .eq('id', targetGroupId)
@@ -217,19 +220,19 @@ export async function POST(request: Request) {
 
                 if (fullGroup && actualCount >= fullGroup.target_count) {
                     // 锁团
-                    await supabase.from('group_buys').update({ status: '已锁单' }).eq('id', targetGroupId);
+                    await adminClient.from('group_buys').update({ status: '已锁单' }).eq('id', targetGroupId);
 
                     if (fullGroup.auto_renew) {
                         // 获取基础标题
                         const baseTitle = fullGroup.title.replace(/ #\d+$/, '');
 
                         // 检查整个系列中是否存在未满员的团
-                        const { data: unfilledGroups } = await supabase
+                        const { data: unfilledGroups } = await adminClient
                             .from('group_buys')
                             .select('id, title, current_count, target_count')
                             .ilike('title', `${baseTitle}%`)
                             .neq('status', '已结束')
-                            .neq('id', targetGroupId);
+                            .neq('id', targetGroupId); // Exclude self
 
                         const hasUnfilledGroup = (unfilledGroups || []).some(
                             g => g.current_count < g.target_count
@@ -237,7 +240,7 @@ export async function POST(request: Request) {
 
                         if (!hasUnfilledGroup) {
                             // 计算批次号
-                            const { count: groupCount } = await supabase
+                            const { count: groupCount } = await adminClient
                                 .from('group_buys')
                                 .select('*', { count: 'exact', head: true })
                                 .ilike('title', `${baseTitle}%`);
@@ -246,7 +249,7 @@ export async function POST(request: Request) {
                             const newTitle = `${baseTitle} #${batchNumber}`;
 
                             // 创建新团
-                            await supabase.from('group_buys').insert({
+                            await adminClient.from('group_buys').insert({
                                 title: newTitle,
                                 price: fullGroup.price,
                                 description: fullGroup.description,
@@ -256,6 +259,7 @@ export async function POST(request: Request) {
                                 status: '进行中',
                                 auto_renew: true,
                                 image_url: fullGroup.image_url,
+                                is_hot: fullGroup.is_hot, // Inherit hot status
                                 parent_group_id: targetGroupId
                             });
                         }
@@ -264,15 +268,15 @@ export async function POST(request: Request) {
 
                 // 如果发生了迁移，检查原始团是否需要删除（变空了）
                 if (migratedTo && body.itemId !== targetGroupId) {
-                    const { data: originalParticipants } = await supabase
+                    const { count: originalParticipantsCount } = await adminClient
                         .from('group_participants')
-                        .select('id')
+                        .select('*', { count: 'exact', head: true })
                         .eq('group_id', body.itemId);
 
-                    if (!originalParticipants || originalParticipants.length === 0) {
-                        // 原始团没有参与者了，可以删除
-                        // 但保留它作为空团以便后续使用
-                        await supabase.from('group_buys').update({ current_count: 0 }).eq('id', body.itemId);
+                    if (originalParticipantsCount === 0) {
+                        // 原始团没有参与者了，且不是目标团，重置它或不做处理（防止其变成死团）
+                        // 这里我们选择将计数必须归零（虽然是新的应该本来就是0，但为了保险）
+                        await adminClient.from('group_buys').update({ current_count: 0 }).eq('id', body.itemId);
                     }
                 }
             }
