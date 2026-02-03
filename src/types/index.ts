@@ -44,18 +44,23 @@ export interface Product {
     specs?: string;
     tutorialId?: string;
     isHot?: boolean;
+    image_url?: string;
+    updatedAt?: string;
 }
 
 export interface Tutorial {
     id: string;
     title: string;
     summary: string;
+    description?: string;
     content: string;
     updatedAt: string;
     category: string;
     tags: string[];
     relatedProductId?: string;
     isLocked?: boolean;
+    isHot?: boolean;
+    imageUrl?: string;
 }
 
 export interface GroupBuy {

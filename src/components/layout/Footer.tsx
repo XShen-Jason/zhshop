@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ShoppingBag, BookOpen, Users, Gift, Mail, ExternalLink, ShieldCheck, Clock, Zap, MessageCircle } from 'lucide-react';
 
 interface SiteConfig {
@@ -15,6 +16,7 @@ interface SiteConfig {
 }
 
 export default function Footer() {
+    const pathname = usePathname();
     const [config, setConfig] = useState<SiteConfig>({});
     const [friendLinks, setFriendLinks] = useState<{ title: string; url: string }[]>([]);
 
@@ -40,6 +42,11 @@ export default function Footer() {
 
         fetchConfig();
     }, []);
+
+    // Hide footer on admin pages
+    if (pathname?.startsWith('/admin')) {
+        return null;
+    }
 
     const currentYear = new Date().getFullYear();
     const copyright = config.footer_copyright || `© ${currentYear} 智汇商城 版权所有`;
@@ -219,3 +226,4 @@ export default function Footer() {
         </footer>
     );
 }
+

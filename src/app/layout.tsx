@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import { createClient } from "@/lib/supabase/server";
 import { ToastProvider } from "@/lib/GlobalToast";
 import { ConfirmProvider } from "@/lib/ConfirmContext";
+import ContactReminder from "@/components/ContactReminder";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,6 +31,7 @@ export default async function RootLayout({
             <Navbar user={user} />
             <main className="flex-1">{children}</main>
             <Footer />
+            <ContactReminder />
           </ToastProvider>
         </ConfirmProvider>
       </body>

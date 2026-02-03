@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, ShoppingBag, Users, Gift, BookOpen, User, Menu, X, LogIn, LogOut, Calendar, Coins, CheckCircle, Sparkles } from 'lucide-react';
+import { Home, ShoppingBag, Users, Gift, BookOpen, User, Menu, X, LogIn, LogOut, Calendar, Coins, CheckCircle, Sparkles, Bell } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { pointsEvents } from '@/lib/events';
+import { pointsEvents, messageEvents } from '@/lib/events';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 const navItems = [
@@ -31,6 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
     const [streak, setStreak] = useState(0);
     const [canCheckIn, setCanCheckIn] = useState(false);
     const [checkingIn, setCheckingIn] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const [showCheckInResult, setShowCheckInResult] = useState<{
         show: boolean;
         pointsEarned: number;
@@ -58,6 +59,18 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
         }
     }, []);
 
+    const fetchUnreadCount = useCallback(async () => {
+        try {
+            const res = await fetch('/api/messages/unread-count');
+            if (res.ok) {
+                const data = await res.json();
+                setUnreadCount(data.count || 0);
+            }
+        } catch (error) {
+            console.error('Error fetching unread count:', error);
+        }
+    }, []);
+
     useEffect(() => {
         if (initialUser !== undefined) {
             setUser(initialUser);
@@ -65,13 +78,15 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
 
             if (initialUser) {
                 fetchCheckInStatus();
+                fetchUnreadCount();
             } else {
                 setPoints(0);
                 setStreak(0);
                 setCanCheckIn(false);
+                setUnreadCount(0);
             }
         }
-    }, [initialUser, fetchCheckInStatus]);
+    }, [initialUser, fetchCheckInStatus, fetchUnreadCount]);
 
     useEffect(() => {
         const supabase = createClient();
@@ -81,6 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
             setLoading(false);
             if (session?.user) {
                 fetchCheckInStatus();
+                fetchUnreadCount();
             }
         });
 
@@ -103,7 +119,15 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
             subscription.unsubscribe();
             unsubscribePoints();
         };
-    }, [fetchCheckInStatus]);
+    }, [fetchCheckInStatus, fetchUnreadCount]);
+
+    // Subscribe to message read events to refresh unread count
+    useEffect(() => {
+        const unsubscribeMessages = messageEvents.subscribe(() => {
+            fetchUnreadCount();
+        });
+        return () => { unsubscribeMessages(); };
+    }, [fetchUnreadCount]);
 
     // Close menu when route changes
     useEffect(() => {
@@ -245,6 +269,19 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
                                         {checkingIn ? '...' : canCheckIn ? '签到' : '已签'}
                                         {!canCheckIn && streak > 0 && <span className="ml-1 text-xs opacity-80">({streak}天)</span>}
                                     </button>
+
+                                    <Link
+                                        href="/messages"
+                                        className="relative flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                                        title="站内信"
+                                    >
+                                        <Bell size={18} />
+                                        {unreadCount > 0 && (
+                                            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+                                                {unreadCount > 99 ? '99+' : unreadCount}
+                                            </span>
+                                        )}
+                                    </Link>
 
                                     <Link
                                         href="/user"

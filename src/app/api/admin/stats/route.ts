@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/admin/stats
  * Returns transaction statistics for admin dashboard:
@@ -8,6 +10,7 @@ import { createClient } from '@/lib/supabase/server';
  * - Yesterday's revenue
  * - Monthly total revenue
  * - Monthly order count
+ * - Group Buy metrics: active count, ended count, total ended sales
  */
 export async function GET() {
     try {
@@ -49,27 +52,35 @@ export async function GET() {
             .select('cost, quantity, updated_at')
             .eq('status', '已完成');
 
-        // Fetch completed/ended groups with participants
+        // Fetch group buys
         const { data: groups } = await supabase
             .from('group_buys')
-            .select('id, price, updated_at, status')
-            .in('status', ['已锁单', '已结束']);
+            .select('id, price, updated_at, status');
+
+        // Fetch counts for active/ended groups
+        const activeGroupsCount = (groups || []).filter(g => g.status === '进行中').length;
+        const lockedGroupsCount = (groups || []).filter(g => g.status === '已锁单').length;
+        const endedGroupsCount = (groups || []).filter(g => g.status === '已结束').length;
+
+        // Filter groups for revenue calcs (Only Ended groups count towards revenue)
+        const revenueGroups = (groups || []).filter(g => g.status === '已结束');
 
         // For each completed group, get participant quantities
-        const groupRevenues: { groupId: string; revenue: number; updatedAt: string }[] = [];
-        if (groups && groups.length > 0) {
+        const groupRevenues: { groupId: string; revenue: number; updatedAt: string; status: string }[] = [];
+        if (revenueGroups.length > 0) {
             const { data: participants } = await supabase
                 .from('group_participants')
                 .select('group_id, quantity')
-                .in('group_id', groups.map(g => g.id));
+                .in('group_id', revenueGroups.map(g => g.id));
 
-            for (const group of groups) {
+            for (const group of revenueGroups) {
                 const groupParticipants = (participants || []).filter(p => p.group_id === group.id);
                 const totalQuantity = groupParticipants.reduce((sum, p) => sum + (p.quantity || 1), 0);
                 groupRevenues.push({
                     groupId: group.id,
                     revenue: (group.price || 0) * totalQuantity,
-                    updatedAt: group.updated_at
+                    updatedAt: group.updated_at,
+                    status: group.status
                 });
             }
         }
@@ -79,6 +90,7 @@ export async function GET() {
         let yesterdayRevenue = 0;
         let monthlyRevenue = 0;
         let monthlyOrderCount = 0;
+        let totalEndedGroupSales = 0;
 
         // Process orders (calculate total from cost * quantity)
         for (const order of orders || []) {
@@ -100,6 +112,10 @@ export async function GET() {
         for (const gr of groupRevenues) {
             const groupDate = new Date(gr.updatedAt);
 
+            if (gr.status === '已结束') {
+                totalEndedGroupSales += gr.revenue;
+            }
+
             if (groupDate >= monthStartUtc) {
                 monthlyRevenue += gr.revenue;
                 monthlyOrderCount++; // Count each group as one "order" for simplicity
@@ -115,7 +131,11 @@ export async function GET() {
             todayRevenue,
             yesterdayRevenue,
             monthlyRevenue,
-            monthlyOrderCount
+            monthlyOrderCount,
+            activeGroupsCount,
+            lockedGroupsCount,
+            endedGroupsCount,
+            totalEndedGroupSales
         });
 
     } catch (error) {
