@@ -185,6 +185,11 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
         router.refresh();
     };
 
+    // Hide Navbar on admin pages
+    if (pathname?.startsWith('/admin')) {
+        return null;
+    }
+
     return (
         <>
             {/* Check-in Result Toast */}
