@@ -46,7 +46,7 @@ export async function GET() {
         // Fetch completed orders
         const { data: orders } = await supabase
             .from('orders')
-            .select('total_price, quantity, updated_at')
+            .select('cost, quantity, updated_at')
             .eq('status', '已完成');
 
         // Fetch completed/ended groups with participants
@@ -80,9 +80,9 @@ export async function GET() {
         let monthlyRevenue = 0;
         let monthlyOrderCount = 0;
 
-        // Process orders (use total_price if available, otherwise price * quantity)
+        // Process orders (calculate total from cost * quantity)
         for (const order of orders || []) {
-            const orderTotal = order.total_price || 0;
+            const orderTotal = (order.cost || 0) * (order.quantity || 1);
             const orderDate = new Date(order.updated_at);
 
             if (orderDate >= monthStartUtc) {
