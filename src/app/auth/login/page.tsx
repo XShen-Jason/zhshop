@@ -3,8 +3,8 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Mail, Lock, LogIn, AlertCircle, CheckCircle } from 'lucide-react';
-import { login } from '../actions';
+import { Mail, Lock, LogIn, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import { login, resendVerification } from '../actions';
 
 function LoginForm() {
     const searchParams = useSearchParams();
@@ -12,6 +12,11 @@ function LoginForm() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [showWelcome, setShowWelcome] = useState(false);
+
+    // Resend verification states
+    const [showResend, setShowResend] = useState(false);
+    const [resending, setResending] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState(false);
 
     // 从 URL 获取预填的 email
     useEffect(() => {
@@ -26,13 +31,42 @@ function LoginForm() {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setShowResend(false);
+        setResendSuccess(false);
 
         const formData = new FormData(e.currentTarget);
         const result = await login(formData);
 
         if (result?.error) {
             setError(result.error);
+            // Check if error is about email not confirmed
+            if (result.error.toLowerCase().includes('not confirmed') ||
+                result.error.toLowerCase().includes('email not verified') ||
+                result.error.toLowerCase().includes('email confirmation')) {
+                setShowResend(true);
+            }
             setLoading(false);
+        }
+    };
+
+    const handleResend = async () => {
+        if (!email) {
+            setError('请先输入邮箱地址');
+            return;
+        }
+
+        setResending(true);
+        setResendSuccess(false);
+
+        const result = await resendVerification(email);
+
+        setResending(false);
+
+        if (result.error) {
+            setError(result.error);
+        } else {
+            setResendSuccess(true);
+            setError(null);
         }
     };
 
@@ -48,10 +82,33 @@ function LoginForm() {
                 </div>
             )}
 
+            {resendSuccess && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl flex items-start text-green-700">
+                    <CheckCircle size={18} className="mr-2 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                        <p className="font-bold mb-1">验证邮件已发送！</p>
+                        <p>请检查您的邮箱 <strong>{email}</strong> 并点击验证链接。</p>
+                    </div>
+                </div>
+            )}
+
             {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center text-red-600">
-                    <AlertCircle size={18} className="mr-2 flex-shrink-0" />
-                    <span className="text-sm">{error}</span>
+                <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl">
+                    <div className="flex items-center text-red-600 mb-2">
+                        <AlertCircle size={18} className="mr-2 flex-shrink-0" />
+                        <span className="text-sm">{error}</span>
+                    </div>
+                    {showResend && (
+                        <button
+                            type="button"
+                            onClick={handleResend}
+                            disabled={resending}
+                            className="mt-2 w-full py-2 px-4 bg-amber-100 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-200 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            <RefreshCw size={14} className={resending ? 'animate-spin' : ''} />
+                            {resending ? '发送中...' : '重新发送验证邮件'}
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -140,3 +197,4 @@ export default function LoginPage() {
         </div>
     );
 }
+
