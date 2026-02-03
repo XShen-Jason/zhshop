@@ -9,28 +9,29 @@ export async function GET(request: Request) {
 
         const supabase = await createClient();
         // Fetch groups with participant quantity sum
+        // Note: We remove the database-level order because we need to sort by computed percentage
         let query = supabase
             .from('group_buys')
-            .select('*, group_participants(quantity)')
-            .order('created_at', { ascending: false });
+            .select('*, group_participants(quantity)');
 
-        if (limit) {
-            query = query.limit(parseInt(limit, 10));
-        }
+        // If limit is small (e.g. homepage), we might still want to fetch more to find the best ones, 
+        // but for performance we might just fetch all (dataset is likely small < 100 active groups).
+        // If dataset grows, we might need a computed column in DB for 'percentage' to sort via SQL.
+        // For now, fetch all then sort.
 
         const { data, error } = await query;
 
         if (error) throw error;
 
-        const groups = (data || []).map(g => {
-            // Sum up all quantities to get actual total (份数), not just participant count (人数)
+        let groups = (data || []).map(g => {
+            // Sum up all quantities to get actual total (份数)
             const participants = g.group_participants || [];
             const quantitySum = participants.reduce((sum: number, p: any) => sum + (p.quantity || 1), 0);
             const currentCount = quantitySum;
             const targetCount = g.target_count ?? 1;
+            const percentage = currentCount / targetCount;
 
-            // Auto-compute status based on progress
-            // Only manual "已结束" is respected as an override
+            // Auto-compute status
             let status = g.status;
             if (status !== '已结束') {
                 if (currentCount >= targetCount) {
@@ -49,9 +50,28 @@ export async function GET(request: Request) {
                 price: g.price,
                 description: g.description,
                 features: g.features || [],
-                autoRenew: g.auto_renew ?? false
+                autoRenew: g.auto_renew ?? false,
+                updatedAt: g.updated_at || g.created_at, // Fallback to created_at
+                percentage: percentage
             };
         });
+
+        // Sort by Percentage (DESC) then by Update Time (DESC)
+        groups.sort((a, b) => {
+            // 1. Percentage: High to Low
+            if (b.percentage !== a.percentage) {
+                return b.percentage - a.percentage;
+            }
+            // 2. Updated At: Recent to Old
+            const timeA = new Date(a.updatedAt).getTime();
+            const timeB = new Date(b.updatedAt).getTime();
+            return timeB - timeA;
+        });
+
+        // Apply limit after sorting
+        if (limit) {
+            groups = groups.slice(0, parseInt(limit, 10));
+        }
 
         return NextResponse.json(groups);
     } catch (error) {
@@ -59,6 +79,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Failed to fetch groups' }, { status: 500 });
     }
 }
+
 
 export async function POST(request: Request) {
     try {
