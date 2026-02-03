@@ -43,6 +43,7 @@ export interface Product {
     features: string[];
     specs?: string;
     tutorialId?: string;
+    isHot?: boolean;
 }
 
 export interface Tutorial {
@@ -67,6 +68,7 @@ export interface GroupBuy {
     description: string;
     features: string[];
     autoRenew?: boolean;
+    isHot?: boolean;
 }
 
 export interface Lottery {
@@ -80,6 +82,7 @@ export interface Lottery {
     description: string;
     prizes: string[];
     hasEntered?: boolean;
+    isHot?: boolean;
 }
 
 export interface Order {

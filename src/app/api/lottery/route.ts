@@ -69,7 +69,8 @@ export async function GET(request: Request) {
             participants: l.lottery_entries?.[0]?.count ?? l.participants ?? 0,
             description: l.description,
             prizes: l.prizes || [],
-            hasEntered: userEntryLotteryIds.has(l.id)
+            hasEntered: userEntryLotteryIds.has(l.id),
+            isHot: l.is_hot || false
         }));
 
         // Sort: pending (待开奖) first, then ended (已结束), then by draw_date
@@ -116,7 +117,8 @@ export async function POST(request: Request) {
             min_participants: body.minParticipants || 1,
             status: '待开奖',
             participants: 0,
-            prizes: body.prizes || []
+            prizes: body.prizes || [],
+            is_hot: body.isHot ?? false
         });
 
         if (error) throw error;
@@ -152,6 +154,7 @@ export async function PUT(request: Request) {
         if (updates.minParticipants !== undefined) updateData.min_participants = updates.minParticipants;
         if (updates.status) updateData.status = updates.status;
         if (updates.prizes) updateData.prizes = updates.prizes;
+        if (updates.isHot !== undefined) updateData.is_hot = updates.isHot;
 
         const { error } = await supabase
             .from('lotteries')

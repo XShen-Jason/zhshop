@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, ArrowRight, CheckCircle, ChevronRight, ChevronDown, Filter, X } from 'lucide-react';
+import { ShoppingBag, ArrowRight, CheckCircle, ChevronRight, ChevronDown, Filter, X, Flame } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Product } from '@/types';
@@ -186,7 +186,12 @@ export default function ProductsPage() {
                                     </div>
 
                                     {/* Title */}
-                                    <h3 className="text-sm md:text-lg font-bold text-gray-900 mb-1 md:mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">{p.title}</h3>
+
+                                    {/* Title */}
+                                    <div className="flex items-start gap-1 mb-1 md:mb-2">
+                                        {p.isHot && <Flame size={16} className="text-red-500 fill-red-500 shrink-0 mt-0.5" />}
+                                        <h3 className="text-sm md:text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-2">{p.title}</h3>
+                                    </div>
 
                                     {/* Description - hidden on mobile */}
                                     <p className="hidden md:block text-gray-500 text-sm mb-5 leading-relaxed flex-1 line-clamp-3">{p.description}</p>

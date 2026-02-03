@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { MessageCircle, Phone, Mail, Send, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageCircle, Phone, Mail, Send, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import Link from 'next/link';
 
 interface ContactSelectorProps {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
+    showLabel?: boolean;
 }
 
 interface SavedContact {
@@ -26,10 +27,23 @@ const TYPE_ICONS: any = {
     Other: MessageCircle
 };
 
-export function ContactSelector({ value, onChange, placeholder = "请输入联系方式" }: ContactSelectorProps) {
+export function ContactSelector({
+    value,
+    onChange,
+    placeholder = "请选择联系方式",
+    showLabel = false
+}: ContactSelectorProps) {
     const [savedContacts, setSavedContacts] = useState<SavedContact[]>([]);
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState(false);
+    const [userEmail, setUserEmail] = useState<string>('');
+
+    // Priority Order
+    const typeOrder = ['WeChat', 'Phone', 'QQ', 'Telegram', 'Email'];
+    const getPriority = (type: string) => {
+        const index = typeOrder.indexOf(type);
+        return index === -1 ? 99 : index;
+    };
 
     useEffect(() => {
         async function fetchContacts() {
@@ -38,14 +52,30 @@ export function ContactSelector({ value, onChange, placeholder = "请输入联�
                 const supabase = createClient();
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
+                    setUserEmail(user.email || '');
+
                     const { data } = await supabase
                         .from('users')
                         .select('saved_contacts')
                         .eq('id', user.id)
                         .single();
 
-                    if (data?.saved_contacts) {
-                        setSavedContacts(data.saved_contacts);
+                    let contacts = data?.saved_contacts || [];
+
+                    // Sort contacts by priority
+                    contacts.sort((a: SavedContact, b: SavedContact) => getPriority(a.type) - getPriority(b.type));
+
+                    setSavedContacts(contacts);
+
+                    // Auto-select if value is empty
+                    if (!value) {
+                        if (contacts.length > 0) {
+                            // Select first available (highest priority)
+                            onChange(`${contacts[0].value}`);
+                        } else if (user.email) {
+                            // Fallback to email
+                            onChange(`${user.email}`);
+                        }
                     }
                 }
             } catch (error) {
@@ -55,79 +85,124 @@ export function ContactSelector({ value, onChange, placeholder = "请输入联�
             }
         }
         fetchContacts();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleSelect = (contact: SavedContact) => {
-        // Format: "Type: Value" or just "Value"?
-        // Used to be just value, but "Type: Value" is clearer?
-        // Existing data likely just has the value.
-        // User request says "save snapshot". 
-        // Let's just use the value. If user wants to include type, they can type "QQ: 123".
-        // But the chips show type.
-        // Let's stick to just value for now to be backward compatible, 
-        // OR format it as "Type: Value" if the value doesn't look self-explanatory?
-        // Let's just set the value. The user can edit it.
-        onChange(`${contact.label || contact.type}: ${contact.value}`);
+    const handleSelect = (contactValue: string) => {
+        onChange(contactValue);
+        setExpanded(false);
+    };
+
+    const dropdownOptions = [...savedContacts];
+
+    // Determine the icon to show for current value
+    const getCurrentIcon = () => {
+        if (!value) return null;
+        // Try to find matching contact type
+        const match = savedContacts.find(c => c.value === value) || (value === userEmail ? { type: 'Email' } : null);
+        if (match) {
+            const Icon = TYPE_ICONS[match.type];
+            return Icon ? <Icon size={18} className="text-gray-500 mr-2" /> : null;
+        }
+        return <MessageCircle size={18} className="text-gray-500 mr-2" />;
     };
 
     return (
-        <div className="space-y-2">
-            <div className="relative">
-                <input
-                    type="text"
-                    readOnly
-                    value={value}
-                    onClick={() => setExpanded(!expanded)}
-                    placeholder={placeholder}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none pr-10 cursor-pointer bg-white"
-                />
-                <button
-                    type="button"
-                    onClick={() => setExpanded(!expanded)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                >
+        <div className="space-y-2 relative">
+            {showLabel && <label className="block text-sm font-bold text-gray-700">联系方式</label>}
+
+            <div
+                onClick={() => setExpanded(!expanded)}
+                className={`w-full px-4 py-3 border rounded-xl flex justify-between items-center cursor-pointer transition-all ${expanded ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-200 hover:border-gray-300'
+                    } bg-white`}
+            >
+                <div className="flex items-center truncate mr-2">
+                    {getCurrentIcon()}
+                    <span className={`truncate ${value ? "text-gray-900 font-medium" : "text-gray-400"}`}>
+                        {value || placeholder}
+                    </span>
+                </div>
+                <div className="flex-shrink-0 text-gray-400">
                     {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                </button>
+                </div>
             </div>
 
-            {/* Quick Select Chips */}
-            {savedContacts.length > 0 && expanded && (
-                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 animate-in slide-in-from-top-2">
-                    <div className="text-xs text-gray-500 mb-2 flex justify-between items-center">
-                        <span>请选择首选联系方式 (将发送给管理员):</span>
-                        <Link href="/user?tab=contacts" className="text-indigo-600 hover:underline">管理</Link>
+            {/* Dropdown */}
+            {expanded && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex justify-between items-center">
+                        <span className="text-xs font-bold text-gray-500">选择联系方式</span>
+                        <Link href="/user?tab=contacts" className="text-xs text-indigo-600 font-bold hover:underline flex items-center">
+                            <Settings size={12} className="mr-1" /> 管理
+                        </Link>
                     </div>
-                    <div className="grid grid-cols-1 gap-2">
-                        {savedContacts.map((c, i) => {
+
+                    <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+                        {dropdownOptions.length === 0 && !userEmail && (
+                            <div className="p-4 text-center text-gray-500 text-sm">
+                                暂无保存的联系方式
+                            </div>
+                        )}
+
+                        {dropdownOptions.map((c, i) => {
                             const Icon = TYPE_ICONS[c.type] || MessageCircle;
+                            const isSelected = value === c.value;
                             return (
                                 <button
-                                    key={i}
+                                    key={`saved-${i}`}
                                     type="button"
-                                    onClick={() => {
-                                        handleSelect(c);
-                                        setExpanded(false);
-                                    }}
-                                    className="flex items-center text-left p-2 bg-white border border-gray-200 rounded hover:border-indigo-300 hover:bg-indigo-50 transition text-sm group"
+                                    onClick={() => handleSelect(c.value)}
+                                    className={`w-full flex items-center text-left p-3 rounded-lg transition group ${isSelected
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'hover:bg-gray-50 text-gray-700'
+                                        }`}
                                 >
-                                    <Icon size={14} className="mr-2 text-gray-400 group-hover:text-indigo-500" />
-                                    <span className="font-medium text-gray-700 mr-2">{c.label || c.type}</span>
-                                    <span className="text-gray-500 truncate flex-1">{c.value}</span>
+                                    <Icon size={16} className={`mr-3 ${isSelected ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'}`} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center">
+                                            <span className="font-bold text-sm mr-2">{c.label || c.type}</span>
+                                        </div>
+                                        <div className={`text-xs truncate ${isSelected ? 'text-indigo-500' : 'text-gray-500'}`}>
+                                            {c.value}
+                                        </div>
+                                    </div>
+                                    {isSelected && <div className="w-2 h-2 rounded-full bg-indigo-600 ml-2"></div>}
                                 </button>
                             );
                         })}
+
+                        {/* Registered Email Option - Only show if not already in saved list */}
+                        {userEmail && !dropdownOptions.some(c => c.value === userEmail) && (
+                            <button
+                                type="button"
+                                onClick={() => handleSelect(userEmail)}
+                                className={`w-full flex items-center text-left p-3 rounded-lg transition group ${value === userEmail
+                                    ? 'bg-indigo-50 text-indigo-700'
+                                    : 'hover:bg-gray-50 text-gray-700'
+                                    }`}
+                            >
+                                <Mail size={16} className={`mr-3 ${value === userEmail ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'}`} />
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-bold text-sm">注册邮箱</div>
+                                    <div className={`text-xs truncate ${value === userEmail ? 'text-indigo-500' : 'text-gray-500'}`}>
+                                        {userEmail}
+                                    </div>
+                                </div>
+                                {value === userEmail && <div className="w-2 h-2 rounded-full bg-indigo-600 ml-2"></div>}
+                            </button>
+                        )}
                     </div>
+
+                    {/* Add New Link at the bottom if empty or just always nice to have? 
+                        User explicitly said "Want to modify? Go to personal center".
+                        The top "Manage" link covers it.
+                    */}
                 </div>
             )}
 
-            {savedContacts.length === 0 && !loading && (
-                <div className="mt-2 text-right">
-                    <Link href="/user?tab=contacts" className="inline-flex items-center text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition shadow-sm border border-indigo-100">
-                        <span className="mr-1">🚀</span>
-                        设置常用联系方式可快速填写
-                        <ChevronDown size={14} className="ml-1 -rotate-90" />
-                    </Link>
-                </div>
+            {/* Overlay to close dropdown when clicking outside */}
+            {expanded && (
+                <div className="fixed inset-0 z-40" onClick={() => setExpanded(false)}></div>
             )}
         </div>
     );

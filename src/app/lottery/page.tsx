@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { Gift, Clock, Users, AlertCircle } from 'lucide-react';
+import { Gift, Clock, Users, AlertCircle, Flame } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Lottery } from '@/types';
@@ -192,7 +192,10 @@ function LotteryCard({ lottery: l, isEnded = false }: { lottery: Lottery; isEnde
                         </div>
                         <Badge status={l.status} className="text-[10px] md:text-xs" />
                     </div>
-                    <h3 className="text-sm md:text-xl font-bold text-gray-900 mb-1 md:mb-2 relative z-10 line-clamp-1">{l.title}</h3>
+                    <div className="flex items-center gap-1 mb-1 md:mb-2 relative z-10">
+                        {l.isHot && <Flame size={18} className="text-red-500 fill-red-500 shrink-0" />}
+                        <h3 className="text-sm md:text-xl font-bold text-gray-900 line-clamp-1">{l.title}</h3>
+                    </div>
                     <p className="hidden md:block text-gray-500 text-sm mb-6 line-clamp-2 relative z-10">{l.description}</p>
 
                     <div className="mt-auto relative z-10">

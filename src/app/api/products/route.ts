@@ -32,7 +32,8 @@ export async function GET(request: Request) {
             stock: p.stock || 0,
             features: p.features || [],
             specs: p.specs,
-            tutorialId: p.tutorial_id
+            tutorialId: p.tutorial_id,
+            isHot: p.is_hot || false
         }));
 
         return NextResponse.json(products);
@@ -67,7 +68,8 @@ export async function POST(request: Request) {
             stock: body.stock ?? 0,
             features: body.features || [],
             specs: body.specs,
-            tutorial_id: body.tutorialId
+            tutorial_id: body.tutorialId,
+            is_hot: body.isHot ?? false
         });
 
         if (error) throw error;
@@ -103,6 +105,7 @@ export async function PUT(request: Request) {
         if (body.features) updateData.features = body.features;
         if (body.specs) updateData.specs = body.specs;
         if (body.tutorialId !== undefined) updateData.tutorial_id = body.tutorialId;
+        if (body.isHot !== undefined) updateData.is_hot = body.isHot;
 
         const { error } = await supabase
             .from('products')

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { Users, Lock, Edit2 } from 'lucide-react';
+import { Users, Lock, Edit2, Flame } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -129,6 +129,7 @@ export default function GroupsPage() {
                             <Badge status={g.status} className="text-[10px] md:text-xs" />
                         </div>
                         <h3 className="text-sm md:text-xl font-bold text-gray-900 mb-1 md:mb-2 group-hover:text-indigo-600 transition-colors flex items-center gap-1 md:gap-2 line-clamp-1">
+                            {g.isHot && <Flame size={18} className="text-red-500 fill-red-500 shrink-0" />}
                             {g.title.replace(/ #\d+$/, '')}
                             {/ #(\d+)$/.test(g.title) && (
                                 <span className="inline-flex items-center justify-center min-w-[18px] md:min-w-[22px] h-[18px] md:h-[22px] px-1 md:px-1.5 bg-indigo-100 text-indigo-600 text-[10px] md:text-xs font-bold rounded-full">

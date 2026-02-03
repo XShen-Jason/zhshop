@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, BookOpen, Users, Gift, ArrowRight, Clock } from 'lucide-react';
+import { ShoppingBag, BookOpen, Users, Gift, ArrowRight, Clock, Flame, Info } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Product, Tutorial, GroupBuy, Lottery } from '@/types';
@@ -75,6 +75,10 @@ export default function HomePage() {
             return true;
         })
         .sort((a, b) => {
+            // Is Hot?
+            if (a.isHot && !b.isHot) return -1;
+            if (!a.isHot && b.isHot) return 1;
+
             const aAvail = isAvailable(a);
             const bAvail = isAvailable(b);
             if (aAvail === bAvail) return 0;
@@ -84,12 +88,21 @@ export default function HomePage() {
     // Active groups (进行中 first)
     const activeGroups = groups
         .filter(g => g.status !== '已结束')
-        .sort((a, b) => (a.status === '进行中' ? -1 : 1))
+        .sort((a, b) => {
+            if (a.isHot && !b.isHot) return -1;
+            if (!a.isHot && b.isHot) return 1;
+            return (a.status === '进行中' ? -1 : 1);
+        })
         .slice(0, 3);
 
     // Active lotteries (待开奖 first)
     const activeLotteries = lotteries
         .filter(l => l.status === '待开奖')
+        .sort((a, b) => {
+            if (a.isHot && !b.isHot) return -1;
+            if (!a.isHot && b.isHot) return 1;
+            return 0;
+        })
         .slice(0, 3);
 
     if (loading) {
@@ -125,6 +138,16 @@ export default function HomePage() {
                 </div>
             </section>
 
+            {/* Points Rules Banner */}
+            <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 md:p-4 flex items-start md:items-center space-x-3 text-sm text-amber-800">
+                <Info size={18} className="text-amber-600 shrink-0 mt-0.5 md:mt-0" />
+                <p>
+                    <span className="font-bold">积分规则：</span>
+                    1 元 = 1 积分。消费获取积分，积分可用于参与所有的 <Link href="/lottery" className="underline font-bold hover:text-amber-900">积分抽奖</Link> 活动。
+                    <Link href="/points" className="ml-1 underline text-amber-600 hover:text-amber-900">查看积分详情</Link>
+                </p>
+            </div>
+
             {/* Row 1: Groups + Lotteries */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
                 {/* Groups Section */}
@@ -142,8 +165,11 @@ export default function HomePage() {
                             <Link key={g.id} href={`/groups/${g.id}`}>
                                 <div className="p-2.5 md:p-3 rounded-lg border border-gray-100 hover:border-green-200 hover:bg-green-50/30 transition">
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="font-bold text-gray-800 text-xs md:text-sm line-clamp-1">{g.title}</h3>
-                                        <Badge status={g.status} className="text-[10px] md:text-xs" />
+                                        <div className="flex items-center gap-1 min-w-0 pr-2">
+                                            {g.isHot && <Flame size={12} className="text-red-500 fill-red-500 shrink-0" />}
+                                            <h3 className="font-bold text-gray-800 text-xs md:text-sm line-clamp-1">{g.title}</h3>
+                                        </div>
+                                        <Badge status={g.status} className="text-[10px] md:text-xs shrink-0" />
                                     </div>
                                     <div className="flex justify-between items-center text-[10px] md:text-xs text-gray-500">
                                         <span>￥{g.price}</span>
@@ -171,8 +197,11 @@ export default function HomePage() {
                             <Link key={l.id} href={`/lottery/${l.id}`}>
                                 <div className="p-2.5 md:p-3 rounded-lg border border-gray-100 hover:border-amber-200 hover:bg-amber-50/30 transition">
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="font-bold text-gray-800 text-xs md:text-sm line-clamp-1">{l.title}</h3>
-                                        <div className="flex gap-1">
+                                        <div className="flex items-center gap-1 min-w-0 pr-2">
+                                            {l.isHot && <Flame size={12} className="text-red-500 fill-red-500 shrink-0" />}
+                                            <h3 className="font-bold text-gray-800 text-xs md:text-sm line-clamp-1">{l.title}</h3>
+                                        </div>
+                                        <div className="flex gap-1 shrink-0">
                                             {l.hasEntered && <Badge status="已参与" className="bg-green-100 text-green-700 border-green-200 text-[10px] md:text-xs" />}
                                             <Badge status={l.status} className="text-[10px] md:text-xs" />
                                         </div>
@@ -246,7 +275,10 @@ export default function HomePage() {
                                 <div className="p-2.5 md:p-4 flex-1 flex flex-col">
                                     <div className="flex justify-between items-start gap-1 md:gap-2 mb-1.5 md:mb-2">
                                         <div className="flex flex-col min-w-0 flex-1">
-                                            <h3 className="font-bold text-xs md:text-base text-gray-800 group-hover:text-indigo-600 transition truncate">{p.title}</h3>
+                                            <div className="flex items-center gap-1 mb-0.5">
+                                                {p.isHot && <Flame size={14} className="text-red-500 fill-red-500 shrink-0" />}
+                                                <h3 className="font-bold text-xs md:text-base text-gray-800 group-hover:text-indigo-600 transition truncate">{p.title}</h3>
+                                            </div>
                                             {(p.subCategory) && <span className="text-[9px] md:text-[10px] text-gray-400 font-medium truncate">{p.subCategory}</span>}
                                         </div>
                                         <Badge status={isAvailable(p) ? '有货' : '无货'} className={`shrink-0 whitespace-nowrap text-[9px] md:text-xs ${isAvailable(p) ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-400'}`} />

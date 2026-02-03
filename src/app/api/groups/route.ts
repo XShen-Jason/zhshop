@@ -52,7 +52,8 @@ export async function GET(request: Request) {
                 features: g.features || [],
                 autoRenew: g.auto_renew ?? false,
                 updatedAt: g.updated_at || g.created_at, // Fallback to created_at
-                percentage: percentage
+                percentage: percentage,
+                isHot: g.is_hot || false
             };
         });
 
@@ -102,7 +103,8 @@ export async function POST(request: Request) {
             current_count: 0,
             status: '进行中',
             features: body.features || [],
-            auto_renew: body.autoRenew ?? false
+            auto_renew: body.autoRenew ?? false,
+            is_hot: body.isHot ?? false
         });
 
         if (error) throw error;
@@ -147,6 +149,7 @@ export async function PUT(request: Request) {
         if (updates.status) updateData.status = updates.status;
         if (updates.features) updateData.features = updates.features;
         if (updates.autoRenew !== undefined) updateData.auto_renew = updates.autoRenew;
+        if (updates.isHot !== undefined) updateData.is_hot = updates.isHot;
 
         const { error } = await supabase
             .from('group_buys')

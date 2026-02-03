@@ -10,6 +10,7 @@ import { ModifyParticipationModal } from '@/components/ModifyParticipationModal'
 import { ContactEditModal } from '@/components/ContactEditModal';
 import { ModifyOrderModal } from '@/components/ModifyOrderModal';
 import { ProfileSettings } from '@/components/ProfileSettings';
+import { FirstTimeContactModal } from '@/components/FirstTimeContactModal';
 import { createClient } from '@/lib/supabase/client';
 import { Order } from '@/types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -69,6 +70,7 @@ export default function UserPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'orders' | 'lotteries' | 'groups' | 'contacts'>('orders');
     const [actionLoading, setActionLoading] = useState(false);
+    const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
     const [editingGroup, setEditingGroup] = useState<GroupEntry | null>(null);
     const [editingContact, setEditingContact] = useState<{
         type: 'order' | 'lottery' | 'group';
@@ -140,6 +142,19 @@ export default function UserPage() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    // Check for missing contacts (First Time Reminder)
+    useEffect(() => {
+        if (!loading && profile) {
+            const hasOtherContacts = profile.savedContacts?.some(c => c.type !== 'Email');
+            const hasPrompted = localStorage.getItem('zhshop_contact_prompted');
+
+            if (!hasOtherContacts && !hasPrompted) {
+                setShowFirstTimeModal(true);
+                localStorage.setItem('zhshop_contact_prompted', 'true');
+            }
+        }
+    }, [loading, profile]);
 
     const handleLogout = async () => {
         const supabase = createClient();
@@ -630,6 +645,18 @@ export default function UserPage() {
                     />
                 )
             }
+
+            {/* First Time Setup Modal - Integrated */}
+            <FirstTimeContactModal
+                isOpen={showFirstTimeModal}
+                onClose={() => setShowFirstTimeModal(false)}
+                existingContacts={profile?.savedContacts || []}
+                onSuccess={() => {
+                    fetchData(); // Refresh data
+                    setShowFirstTimeModal(false);
+                }}
+            />
+
         </div >
     );
 }

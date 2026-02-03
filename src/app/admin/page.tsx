@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
     Plus, Edit, Trash2, ChevronDown, ChevronUp, Search, User, Package, List, Settings, Image as ImageIcon, Bell, Menu, X, Check, Lock, Unlock, Archive, LogOut, Download, MessageSquare, CheckCircle, XCircle, ArrowLeft, Users, Clock,
-    BarChart2, ShoppingCart, Activity, AlertCircle, Box, FileText, Gift, Users2, Play, Eye, Repeat, Copy, Grid, Loader2, Save, Upload
+    BarChart2, ShoppingCart, Activity, AlertCircle, Box, FileText, Gift, Users2, Play, Eye, Repeat, Copy, Grid, Loader2, Save, Upload, Flame
 } from 'lucide-react';
 import { Order, Product, Tutorial } from '@/types';
 import { createClient } from '@/lib/supabase/client';
@@ -29,6 +29,7 @@ interface GroupBuy {
     description: string;
     features: string[];
     autoRenew?: boolean;
+    isHot?: boolean;
 }
 
 interface Lottery {
@@ -42,6 +43,7 @@ interface Lottery {
     description: string;
     prizes: string[];
     minParticipants?: number;
+    isHot?: boolean;
 }
 
 // Simple Participant Interface for Modal
@@ -417,6 +419,30 @@ export default function AdminPage() {
         } catch (e) {
             console.error(e);
             showToast('更新失败', 'error');
+        }
+    };
+
+
+    const handleToggleHot = async (type: 'products' | 'groups' | 'lottery', id: string, currentIsHot: boolean) => {
+        try {
+            const endpoint = type === 'products' ? '/api/products' : (type === 'groups' ? '/api/groups' : '/api/lottery');
+            const res = await fetch(endpoint, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, isHot: !currentIsHot })
+            });
+
+            if (res.ok) {
+                showToast(currentIsHot ? '已取消热门' : '已设为热门', 'success');
+                if (type === 'products') fetchProducts(true);
+                else if (type === 'groups') fetchGroups(true);
+                else fetchLotteries(true);
+            } else {
+                throw new Error('Failed to update');
+            }
+        } catch (error) {
+            console.error('Toggle hot error:', error);
+            showToast('操作失败', 'error');
         }
     };
 
@@ -1038,6 +1064,13 @@ export default function AdminPage() {
                 <div className="flex justify-between items-start mb-2 gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         <h4 className="font-bold text-gray-800 line-clamp-1 flex-shrink">{group.title}</h4>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleToggleHot('groups', group.id, !!group.isHot); }}
+                            className={`p-0.5 rounded transition-colors ${group.isHot ? 'text-red-500 bg-red-50' : 'text-gray-300 hover:text-red-400'}`}
+                            title={group.isHot ? "取消热门" : "设为热门"}
+                        >
+                            <Flame size={14} fill={group.isHot ? "currentColor" : "none"} />
+                        </button>
                         {group.autoRenew && (
                             <div className="flex items-center text-[10px] bg-blue-500 text-white px-2 py-0.5 rounded-full font-bold shrink-0" title="满员后自动开启下一团">
                                 <Repeat size={10} className="mr-0.5" /> 续团
@@ -1135,7 +1168,16 @@ export default function AdminPage() {
                             items.map(l => (
                                 <tr key={l.id} className={isPending ? 'bg-amber-50/30' : ''}>
                                     <td className="p-3">
-                                        <div className="font-medium line-clamp-1" title={l.title}>{l.title}</div>
+                                        <div className="flex items-center gap-1">
+                                            <div className="font-medium line-clamp-1" title={l.title}>{l.title}</div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleToggleHot('lottery', l.id, !!l.isHot); }}
+                                                className={`p-0.5 rounded transition-colors ${l.isHot ? 'text-red-500 bg-red-50' : 'text-gray-300 hover:text-red-400'}`}
+                                                title={l.isHot ? "取消热门" : "设为热门"}
+                                            >
+                                                <Flame size={12} fill={l.isHot ? "currentColor" : "none"} />
+                                            </button>
+                                        </div>
                                         <div className="text-xs text-gray-400 mt-0.5">
                                             {isPending ? (
                                                 <span className="text-amber-600 bg-amber-50 px-1 rounded">待开奖</span>
@@ -1333,7 +1375,16 @@ export default function AdminPage() {
                 {filteredProducts.map(p => (
                     <div key={p.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-2">
-                            <h5 className="font-bold text-gray-800 line-clamp-1" title={p.title}>{p.title}</h5>
+                            <div className="flex items-center gap-1 flex-1 min-w-0 pr-2">
+                                <h5 className="font-bold text-gray-800 line-clamp-1" title={p.title}>{p.title}</h5>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleToggleHot('products', p.id, !!p.isHot); }}
+                                    className={`p-0.5 rounded transition-colors ${p.isHot ? 'text-red-500 bg-red-50' : 'text-gray-300 hover:text-red-400'}`}
+                                    title={p.isHot ? "取消热门" : "设为热门"}
+                                >
+                                    <Flame size={14} fill={p.isHot ? "currentColor" : "none"} />
+                                </button>
+                            </div>
                             <span className={`text-xs px-2 py-0.5 rounded-full ${p.inStock ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
                                 {p.inStock ? '上架' : '下架'}
                             </span>

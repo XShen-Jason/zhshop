@@ -123,20 +123,6 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
 
             <form onSubmit={handleSave} className="p-4 md:p-8 space-y-4 md:space-y-6 max-w-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    {/* QQ */}
-                    <div>
-                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2 flex items-center">
-                            <MessageCircle size={14} className="mr-1.5 md:mr-2 text-blue-500 md:w-4 md:h-4" /> QQ
-                        </label>
-                        <input
-                            type="text"
-                            value={qq}
-                            onChange={e => setQq(e.target.value)}
-                            placeholder="请输入QQ号"
-                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition outline-none text-sm"
-                        />
-                    </div>
-
                     {/* WeChat */}
                     <div>
                         <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2 flex items-center">
@@ -148,6 +134,34 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
                             onChange={e => setWechat(e.target.value)}
                             placeholder="请输入微信号"
                             className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-green-500 focus:bg-white transition outline-none text-sm"
+                        />
+                    </div>
+
+                    {/* Phone */}
+                    <div>
+                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2 flex items-center">
+                            <Phone size={14} className="mr-1.5 md:mr-2 text-indigo-500 md:w-4 md:h-4" /> 手机号
+                        </label>
+                        <input
+                            type="tel"
+                            value={phone}
+                            onChange={e => setPhone(e.target.value)}
+                            placeholder="请输入手机号码"
+                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition outline-none text-sm"
+                        />
+                    </div>
+
+                    {/* QQ */}
+                    <div>
+                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2 flex items-center">
+                            <MessageCircle size={14} className="mr-1.5 md:mr-2 text-blue-500 md:w-4 md:h-4" /> QQ
+                        </label>
+                        <input
+                            type="text"
+                            value={qq}
+                            onChange={e => setQq(e.target.value)}
+                            placeholder="请输入QQ号"
+                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition outline-none text-sm"
                         />
                     </div>
 
@@ -166,20 +180,6 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
                                 className="w-full pl-8 md:pl-10 pr-3 md:pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-sky-500 focus:bg-white transition outline-none text-sm"
                             />
                         </div>
-                    </div>
-
-                    {/* Phone */}
-                    <div>
-                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2 flex items-center">
-                            <Phone size={14} className="mr-1.5 md:mr-2 text-indigo-500 md:w-4 md:h-4" /> 手机号
-                        </label>
-                        <input
-                            type="tel"
-                            value={phone}
-                            onChange={e => setPhone(e.target.value)}
-                            placeholder="请输入手机号码"
-                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition outline-none text-sm"
-                        />
                     </div>
 
                     {/* Email */}
