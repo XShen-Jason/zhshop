@@ -15,9 +15,10 @@ interface FirstTimeContactModalProps {
     onClose: () => void;
     existingContacts: Contact[];
     onSuccess: () => void;
+    allowSkip?: boolean;
 }
 
-export function FirstTimeContactModal({ isOpen, onClose, existingContacts, onSuccess }: FirstTimeContactModalProps) {
+export function FirstTimeContactModal({ isOpen, onClose, existingContacts, onSuccess, allowSkip = true }: FirstTimeContactModalProps) {
     const [wechat, setWechat] = useState('');
     const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
@@ -56,7 +57,6 @@ export function FirstTimeContactModal({ isOpen, onClose, existingContacts, onSuc
             if (res.ok) {
                 showToast('保存成功，感谢您的配合！', 'success');
                 onSuccess();
-                onClose();
             } else {
                 showToast('保存失败', 'error');
             }
@@ -72,14 +72,14 @@ export function FirstTimeContactModal({ isOpen, onClose, existingContacts, onSuc
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white text-center">
-                    <h2 className="text-xl font-bold mb-2">👋 欢迎加入!</h2>
-                    <p className="text-indigo-100 text-sm">为了方便发货与联系，请完善您的联系方式</p>
+                    <h2 className="text-xl font-bold mb-2">👋 补充联系方式</h2>
+                    <p className="text-indigo-100 text-sm">为了确保发货与通知，请至少填写一项联系方式</p>
                 </div>
 
                 <div className="p-6 md:p-8 space-y-5">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center">
-                            <MessageCircle size={16} className="mr-2 text-green-500" /> 微信 (推荐)
+                            <MessageCircle size={16} className="mr-2 text-green-500" /> 微信
                         </label>
                         <input
                             type="text"
@@ -104,12 +104,14 @@ export function FirstTimeContactModal({ isOpen, onClose, existingContacts, onSuc
                     </div>
 
                     <div className="pt-4 flex gap-3">
-                        <button
-                            onClick={onClose}
-                            className="flex-1 py-3 text-gray-500 font-medium hover:bg-gray-50 rounded-xl transition"
-                        >
-                            跳过
-                        </button>
+                        {allowSkip && (
+                            <button
+                                onClick={onClose}
+                                className="flex-1 py-3 text-gray-500 font-medium hover:bg-gray-50 rounded-xl transition"
+                            >
+                                跳过
+                            </button>
+                        )}
                         <button
                             onClick={handleSave}
                             disabled={loading}

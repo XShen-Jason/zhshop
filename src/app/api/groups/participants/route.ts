@@ -33,7 +33,7 @@ export async function GET(request: Request) {
         const adminClient = createAdminClient();
         const { data, error } = await adminClient
             .from('group_participants')
-            .select('user_id, joined_at, quantity, contact_info, users(email, name, saved_contacts)')
+            .select('user_id, joined_at, quantity, is_contacted, contact_info, users(email, name, saved_contacts)')
             .eq('group_id', groupId);
 
         if (error) throw error;
@@ -49,12 +49,18 @@ export async function GET(request: Request) {
                     contact: d.contact_info || d.users?.email || '-',
                     joinedAt: d.joined_at,
                     quantity: 0,
+                    isContacted: d.is_contacted,
                     users: d.users,
                     name: d.users?.name, // Explicitly set name
                     savedContacts: d.users?.saved_contacts || []
                 };
             }
             acc[userIdKey].quantity += (d.quantity || 1);
+            // If any record says contacted, keep it? Or strictly sync?
+            // Since we updated all rows in PUT, they should be consistent.
+            // But let's safe guard: if current d.is_contacted is true, ensure acc is true.
+            if (d.is_contacted) acc[userIdKey].isContacted = true;
+
             return acc;
         }, {});
 
@@ -77,11 +83,27 @@ export async function PUT(request: Request) {
         const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
         if (profile?.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-        const body: UpdateParams = await request.json();
-        const { groupId, userId, quantity } = body;
+        const body: UpdateParams & { isContacted?: boolean } = await request.json();
+        const { groupId, userId, quantity, isContacted } = body;
 
-        if (!groupId || !userId || quantity === undefined) {
+        if (!groupId || !userId) {
             return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+        }
+
+        // Handle isContacted toggle
+        if (isContacted !== undefined) {
+            const { error: updateError } = await supabase
+                .from('group_participants')
+                .update({ is_contacted: isContacted })
+                .eq('group_id', groupId)
+                .eq('user_id', userId);
+
+            if (updateError) throw updateError;
+            return NextResponse.json({ success: true });
+        }
+
+        if (quantity === undefined) {
+            return NextResponse.json({ error: 'Missing quantity' }, { status: 400 });
         }
 
         // 2. Get old quantity to adjust count

@@ -18,6 +18,7 @@ interface GroupParticipant {
     contact: string;
     joinedAt: string;
     quantity: number;
+    isContacted?: boolean;
     name?: string;
     users?: {
         email: string;
@@ -115,7 +116,7 @@ export default function AdminGroupsPage() {
     const updateStatus = async (id: string, newStatus: string) => {
         const title = newStatus === '已锁单' ? '确认锁单' : newStatus === '已结束' ? '确认结束' : '确认操作';
         const msg = newStatus === '已结束'
-            ? '结束拼团后将无法再修改。确定要结束吗？'
+            ? '结束拼团后将无法再修改。确定要结束吗？(必须先联系所有参与者)'
             : `确定要将拼团状态更改为 "${newStatus}" 吗？`;
 
         const confirmed = await confirm({
@@ -135,6 +136,9 @@ export default function AdminGroupsPage() {
             if (res.ok) {
                 showToast('状态已更新', 'success');
                 fetchGroups();
+            } else {
+                const data = await res.json();
+                showToast(data.error || '状态更新失败', 'error');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -198,6 +202,36 @@ export default function AdminGroupsPage() {
         }
     };
 
+    const toggleParticipantContact = async (userId: string, isContacted: boolean) => {
+        if (!currentGroupId) return;
+
+        // Optimistic UI update
+        setParticipants(prev => prev.map(p => p.userId === userId ? { ...p, isContacted } : p));
+
+        try {
+            const res = await fetch('/api/groups/participants', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ groupId: currentGroupId, userId, isContacted })
+            });
+
+            if (res.ok) {
+                // Silently successful, no toast needed for simple toggle to avoid noise, 
+                // or use a very subtle one. User requested "don't refresh all the time".
+                // failing silently is bad, so we handle error.
+            } else {
+                // Revert on failure
+                setParticipants(prev => prev.map(p => p.userId === userId ? { ...p, isContacted: !isContacted } : p));
+                showToast('更新失败', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            // Revert on error
+            setParticipants(prev => prev.map(p => p.userId === userId ? { ...p, isContacted: !isContacted } : p));
+            showToast('更新出错', 'error');
+        }
+    };
+
     const removeParticipant = async (userId: string) => {
         if (!currentGroupId) return;
         const confirmed = await confirm({
@@ -227,142 +261,38 @@ export default function AdminGroupsPage() {
 
     // --- Render Components ---
 
-    const GroupEditModal = () => {
-        if (!editingGroup) return null;
+    // Group feature helpers
+    const addFeature = () => {
+        if (!editingGroup) return;
+        const features = [...(editingGroup.features || []), ''];
+        setEditingGroup({ ...editingGroup, features });
+    };
 
-        const addFeature = () => {
-            const features = [...(editingGroup.features || []), ''];
-            setEditingGroup({ ...editingGroup, features });
-        };
+    const updateFeature = (idx: number, val: string) => {
+        if (!editingGroup) return;
+        const features = [...(editingGroup.features || [])];
+        features[idx] = val;
+        setEditingGroup({ ...editingGroup, features });
+    };
 
-        const updateFeature = (idx: number, val: string) => {
-            const features = [...(editingGroup.features || [])];
-            features[idx] = val;
-            setEditingGroup({ ...editingGroup, features });
-        };
-
-        const removeFeature = (idx: number) => {
-            const features = (editingGroup.features || []).filter((_, i) => i !== idx);
-            setEditingGroup({ ...editingGroup, features });
-        };
-
-        return (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowEditModal(false)}>
-                <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                    <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                        <h3 className="font-bold text-lg text-gray-900">{editingGroup.id ? '编辑拼团' : '发布新拼团'}</h3>
-                        <button onClick={() => setShowEditModal(false)}><X size={20} className="text-gray-400 hover:text-gray-600" /></button>
-                    </div>
-
-                    <form onSubmit={handleSaveGroup} className="flex-1 overflow-y-auto p-6 space-y-6">
-                        {/* Basic Info */}
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">拼团名称 <span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    value={editingGroup.title || ''}
-                                    onChange={e => setEditingGroup({ ...editingGroup, title: e.target.value })}
-                                    className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                    required
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">价格 (￥) <span className="text-red-500">*</span></label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={editingGroup.price || ''}
-                                        onChange={e => setEditingGroup({ ...editingGroup, price: parseFloat(e.target.value) })}
-                                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">目标人数 <span className="text-red-500">*</span></label>
-                                    <input
-                                        type="number"
-                                        value={editingGroup.targetCount || ''}
-                                        onChange={e => setEditingGroup({ ...editingGroup, targetCount: parseInt(e.target.value) })}
-                                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">描述</label>
-                                <textarea
-                                    value={editingGroup.description || ''}
-                                    onChange={e => setEditingGroup({ ...editingGroup, description: e.target.value })}
-                                    className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                    rows={3}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Features */}
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="block text-sm font-bold text-gray-700">拼团特性 (Features)</label>
-                                <button type="button" onClick={addFeature} className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 flex items-center gap-1">
-                                    <Plus size={12} /> 添加
-                                </button>
-                            </div>
-                            <div className="space-y-2">
-                                {(editingGroup.features || []).map((f, i) => (
-                                    <div key={i} className="flex gap-2">
-                                        <input
-                                            value={f}
-                                            onChange={e => updateFeature(i, e.target.value)}
-                                            className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500"
-                                            placeholder="例如：自动发货"
-                                        />
-                                        <button type="button" onClick={() => removeFeature(i)} className="text-gray-400 hover:text-red-500 p-2">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Toggles */}
-                        <div className="flex gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${editingGroup.isHot ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'}`}>
-                                    {editingGroup.isHot && <Check size={12} className="text-white" />}
-                                    <input type="checkbox" className="hidden" checked={editingGroup.isHot || false} onChange={e => setEditingGroup({ ...editingGroup, isHot: e.target.checked })} />
-                                </div>
-                                <span className="text-sm font-medium">设为热销</span>
-                            </label>
-
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${editingGroup.autoRenew ? 'bg-purple-600 border-purple-600' : 'bg-white border-gray-300'}`}>
-                                    {editingGroup.autoRenew && <Check size={12} className="text-white" />}
-                                    <input type="checkbox" className="hidden" checked={editingGroup.autoRenew || false} onChange={e => setEditingGroup({ ...editingGroup, autoRenew: e.target.checked })} />
-                                </div>
-                                <span className="text-sm font-medium">自动续期 (人满自动重开)</span>
-                            </label>
-                        </div>
-                    </form>
-
-                    <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                        <button onClick={() => setShowEditModal(false)} className="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-100">取消</button>
-                        <button onClick={handleSaveGroup} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm">保存</button>
-                    </div>
-                </div>
-            </div>
-        );
+    const removeFeature = (idx: number) => {
+        if (!editingGroup) return;
+        const features = (editingGroup.features || []).filter((_, i) => i !== idx);
+        setEditingGroup({ ...editingGroup, features });
     };
 
     const ParticipantsModal = () => {
         if (!showParticipantsModal) return null;
 
+        // Sort: Uncontacted first
+        const sortedParticipants = [...participants].sort((a, b) => {
+            if (!!a.isContacted === !!b.isContacted) return 0;
+            return a.isContacted ? 1 : -1;
+        });
+
         return (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowParticipantsModal(false)}>
-                <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden transition-all" onClick={e => e.stopPropagation()} style={{ maxHeight: '85vh' }}>
+                <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl flex flex-col overflow-hidden transition-all" onClick={e => e.stopPropagation()} style={{ maxHeight: '85vh' }}>
                     <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                         <div>
                             <h3 className="font-bold text-lg text-gray-900">参与者列表</h3>
@@ -380,9 +310,11 @@ export default function AdminGroupsPage() {
                                 <p>暂无参与者</p>
                             </div>
                         ) : (
-                            participants.map(p => (
-                                <ParticipantItem key={p.userId} p={p} />
-                            ))
+                            <div className="grid grid-cols-1 gap-2">
+                                {sortedParticipants.map(p => (
+                                    <ParticipantItem key={p.userId} p={p} />
+                                ))}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -402,96 +334,166 @@ export default function AdminGroupsPage() {
             setIsEditingQty(false);
         };
 
+        const copyToClipboard = (text: string) => {
+            navigator.clipboard.writeText(text);
+            showToast('已复制到剪贴板', 'success');
+        };
+
+        // Aggregation & Priority Logic for Contacts
+        // 1. Collect all valid contacts
+        let allContacts: { type: string, value: string }[] = [];
+        if (p.savedContacts && p.savedContacts.length > 0) {
+            allContacts = [...p.savedContacts];
+        }
+        // If legacy 'contact' field exists and not saved, add it
+        if (p.contact) {
+            const exists = allContacts.some(c => c.value === p.contact);
+            if (!exists) {
+                // Heuristic: 11 digits = phone
+                const isPhone = /^\d{11}$/.test(p.contact);
+                allContacts.push({ type: isPhone ? 'phone' : 'contact', value: p.contact });
+            }
+        }
+
+        // 2. Sort: Wechat > Phone > QQ > others
+        const getPriority = (type: string) => {
+            const t = type.toLowerCase();
+            if (t === 'wechat' || t === '微信' || t === 'wx') return 1;
+            if (t === 'phone' || t === '手机' || t === 'mobile') return 2;
+            if (t === 'qq') return 3;
+            if (t.includes('mail')) return 4;
+            return 5;
+        };
+
+        allContacts.sort((a, b) => getPriority(a.type) - getPriority(b.type));
+
+        const primaryContact = allContacts.length > 0 ? allContacts[0] : null;
+        const extraContacts = allContacts.length > 1 ? allContacts.slice(1) : [];
+        const hasExtraContacts = extraContacts.length > 0;
+
+        const ContactBadge = ({ type, value }: { type: string, value: string }) => (
+            <div
+                onClick={(e) => { e.stopPropagation(); copyToClipboard(value); }}
+                className="flex items-center gap-3 text-xs text-gray-600 hover:bg-gray-100 p-1.5 rounded cursor-pointer select-none group w-fit transition-colors border border-transparent hover:border-gray-200"
+                title="点击复制"
+            >
+                <span className={`text-[10px] min-w-[36px] px-1 text-center py-0.5 rounded font-bold uppercase tracking-wider ${type === 'qq' ? 'bg-blue-100 text-blue-600' :
+                        type === 'wechat' || type === 'wx' ? 'bg-green-100 text-green-600' :
+                            type === 'phone' || type === 'shouji' ? 'bg-orange-100 text-orange-600' :
+                                'bg-gray-100 text-gray-500'
+                    }`}>
+                    {type === 'wechat' || type === 'wx' ? 'WX' : type === 'contact' ? '其它' : type === 'phone' ? '手机' : type.toUpperCase()}
+                </span>
+                <span className="font-mono group-hover:text-indigo-600 font-medium">{value}</span>
+            </div>
+        );
+
         return (
-            <div className="flex flex-col p-4 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 transition-all shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                    {/* User Info */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold shrink-0">
-                            {p.name?.[0]?.toUpperCase() || p.users?.name?.[0]?.toUpperCase() || 'U'}
-                        </div>
-                        <div>
-                            <div className="font-medium text-gray-900 text-sm">{p.name || p.users?.name || '未知用户'}</div>
-                            <div className="text-xs text-gray-400 font-mono">{p.users?.email}</div>
-                        </div>
+            <div className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border transition-all shadow-sm gap-4 ${p.isContacted ? 'bg-green-50/50 border-green-100' : 'bg-white border-gray-100 hover:bg-gray-50'}`}>
+                {/* User Info Section */}
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${p.isContacted ? 'bg-green-100 text-green-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                        {p.name?.[0]?.toUpperCase() || p.users?.name?.[0]?.toUpperCase() || 'U'}
                     </div>
-
-                    {/* Meta Info */}
-                    <div className="flex flex-col sm:items-end gap-1.5 w-full sm:w-auto">
-                        <div className="flex items-center justify-between sm:justify-end gap-3 w-full">
-                            {/* Quantity Editor */}
-                            <div className="flex items-center">
-                                {isEditingQty ? (
-                                    <div className="flex items-center gap-1">
-                                        <input
-                                            type="number"
-                                            value={qty}
-                                            onChange={e => setQty(parseInt(e.target.value) || 1)}
-                                            className="w-12 border rounded px-1 py-0.5 text-xs outline-indigo-500"
-                                            min={1}
-                                        />
-                                        <button onClick={handleQtySave} className="p-0.5 bg-indigo-600 text-white rounded hover:bg-indigo-700"><Check size={12} /></button>
-                                        <button onClick={() => { setQty(p.quantity); setIsEditingQty(false); }} className="p-0.5 bg-gray-200 text-gray-600 rounded hover:bg-gray-300"><X size={12} /></button>
-                                    </div>
-                                ) : (
-                                    <button onClick={() => setIsEditingQty(true)} className="flex items-center gap-1 hover:bg-indigo-50 px-2 py-0.5 rounded-full group border border-transparent hover:border-indigo-100 transition-all">
-                                        <span className="text-xs text-gray-500">份数:</span>
-                                        <span className="font-bold text-gray-900">{p.quantity}</span>
-                                        <Edit size={10} className="text-indigo-400 opacity-0 group-hover:opacity-100" />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Join Time */}
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-50 rounded text-xs text-gray-500 whitespace-nowrap min-w-[140px] justify-end">
-                                <Clock size={10} className="text-gray-400" />
-                                {formatBeijing(p.joinedAt)}
-                            </div>
-
-                            {/* Remove Action */}
-                            <button
-                                onClick={() => removeParticipant(p.userId)}
-                                className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-colors"
-                                title="移除参与者"
-                            >
-                                <Trash2 size={14} />
-                            </button>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                            <div className="font-medium text-gray-900 truncate">{p.name || p.users?.name || '未知用户'}</div>
+                            {p.isContacted && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold whitespace-nowrap">已联系</span>}
                         </div>
-
-                        {/* Contact Info */}
-                        <div className="flex justify-start sm:justify-end w-full">
-                            {p.contact ? (
-                                <button
-                                    onClick={() => setShowContacts(!showContacts)}
-                                    className={`flex items-center gap-1.5 px-2 py-1 rounded border transition-colors text-xs ${showContacts ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
-                                >
-                                    <span className="font-mono select-all truncate max-w-[150px]">{p.contact}</span>
-                                    <ChevronRight size={12} className={`transition-transform duration-200 ${showContacts ? 'rotate-90' : ''}`} />
-                                </button>
-                            ) : (
-                                <span className="text-gray-300 italic px-2 text-xs">未留联系方式</span>
-                            )}
-                        </div>
+                        <div className="text-xs text-gray-400 font-mono truncate">{p.users?.email}</div>
                     </div>
                 </div>
 
-                {/* Dropdown Contacts */}
-                {showContacts && (
-                    <div className="mt-3 bg-white rounded-lg border border-indigo-100 shadow-sm p-2 space-y-1 animate-in fade-in slide-in-from-top-1 duration-200 mx-1">
-                        <div className="text-[10px] font-bold text-gray-400 px-2 py-0.5 uppercase tracking-wider mb-1">所有联系方式</div>
-                        {p.savedContacts?.map((c, i) => (
-                            <div key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded text-xs text-gray-700 transition-colors">
-                                {c.type === 'qq' ? <div className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-medium min-w-[30px] text-center">QQ</div> :
-                                    c.type === 'wechat' ? <div className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded font-medium min-w-[30px] text-center">WX</div> :
-                                        <div className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium min-w-[30px] text-center">{c.type}</div>}
-                                <span className="select-all font-mono text-gray-600">{c.value}</span>
+                {/* Contact Info Section - Primary + Dropdown */}
+                <div className="flex-1 flex flex-col justify-center min-w-[250px] relative">
+                    <div className="space-y-1">
+                        {/* Primary Contact */}
+                        {primaryContact ? (
+                            <div className="flex items-center gap-2">
+                                <ContactBadge type={primaryContact.type} value={primaryContact.value} />
+                                {hasExtraContacts && (
+                                    <button
+                                        onClick={() => setShowContacts(!showContacts)}
+                                        className={`p-1 rounded hover:bg-gray-200 text-gray-400 transition-all ${showContacts ? 'bg-gray-100 text-gray-600 rotate-180' : ''}`}
+                                    >
+                                        <ChevronDown size={14} />
+                                    </button>
+                                )}
                             </div>
-                        ))}
-                        {(!p.savedContacts || p.savedContacts.length === 0) && (
-                            <div className="px-2 py-2 text-xs text-gray-400 text-center italic">无额外联系方式</div>
+                        ) : (
+                            <span className="text-xs text-gray-300 italic px-2">暂无联系方式</span>
                         )}
                     </div>
-                )}
+
+                    {/* Dropdown for Extra Contacts */}
+                    {hasExtraContacts && showContacts && (
+                        <div className="absolute top-full left-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-xl p-2 z-10 w-full min-w-[200px] animate-in fade-in slide-in-from-top-1">
+                            <div className="text-[10px] font-bold text-gray-400 px-2 py-1 uppercase tracking-wider mb-1">更多联系方式</div>
+                            <div className="space-y-1">
+                                {extraContacts.map((c, i) => (
+                                    <ContactBadge key={i} type={c.type} value={c.value} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Actions & Meta Section */}
+                <div className="flex items-center gap-4 justify-between sm:justify-end min-w-[300px]">
+                    {/* Join Time */}
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400 whitespace-nowrap">
+                        <Clock size={12} />
+                        {formatBeijing(p.joinedAt)}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {/* Quantity Editor */}
+                        <div className="flex items-center">
+                            {isEditingQty ? (
+                                <div className="flex items-center gap-1">
+                                    <input
+                                        type="number"
+                                        value={qty}
+                                        onChange={e => setQty(parseInt(e.target.value) || 1)}
+                                        className="w-12 border rounded px-1 py-1 text-xs outline-indigo-500 text-center"
+                                        min={1}
+                                        onClick={e => e.stopPropagation()}
+                                    />
+                                    <button onClick={handleQtySave} className="p-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"><Check size={12} /></button>
+                                    <button onClick={() => { setQty(p.quantity); setIsEditingQty(false); }} className="p-1 bg-gray-200 text-gray-600 rounded hover:bg-gray-300"><X size={12} /></button>
+                                </div>
+                            ) : (
+                                <button onClick={() => setIsEditingQty(true)} className="flex items-center gap-1.5 hover:bg-indigo-50 px-3 py-1.5 rounded-lg group border border-transparent hover:border-indigo-100 transition-all">
+                                    <span className="text-xs text-gray-500">份数</span>
+                                    <span className="font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded group-hover:bg-white">{p.quantity}</span>
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Contact Toggle */}
+                        <div className="flex items-center">
+                            <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-lg border transition-all ${p.isContacted ? 'bg-green-500 border-green-500 text-white shadow-md shadow-green-200' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                                <input
+                                    type="checkbox"
+                                    className="hidden"
+                                    checked={!!p.isContacted}
+                                    onChange={(e) => toggleParticipantContact(p.userId, e.target.checked)}
+                                />
+                                {p.isContacted ? <Check size={14} /> : <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300"></div>}
+                                <span className="text-xs font-bold whitespace-nowrap">{p.isContacted ? '已联系' : '标为已联系'}</span>
+                            </label>
+                        </div>
+
+                        {/* Remove Action */}
+                        <button
+                            onClick={() => removeParticipant(p.userId)}
+                            className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                            title="移除参与者"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     };
@@ -689,7 +691,115 @@ export default function AdminGroupsPage() {
             </div>
 
             {/* Modals */}
-            {showEditModal && <GroupEditModal />}
+            {showEditModal && editingGroup && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowEditModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-lg text-gray-900">{editingGroup.id ? '编辑拼团' : '发布新拼团'}</h3>
+                            <button onClick={() => setShowEditModal(false)}><X size={20} className="text-gray-400 hover:text-gray-600" /></button>
+                        </div>
+
+                        <form onSubmit={handleSaveGroup} className="flex-1 overflow-y-auto p-6 space-y-6">
+                            {/* Basic Info */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">拼团名称 <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        value={editingGroup.title || ''}
+                                        onChange={e => setEditingGroup({ ...editingGroup, title: e.target.value })}
+                                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">价格 (￥) <span className="text-red-500">*</span></label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={editingGroup.price || ''}
+                                            onChange={e => setEditingGroup({ ...editingGroup, price: parseFloat(e.target.value) })}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">目标人数 <span className="text-red-500">*</span></label>
+                                        <input
+                                            type="number"
+                                            value={editingGroup.targetCount || ''}
+                                            onChange={e => setEditingGroup({ ...editingGroup, targetCount: parseInt(e.target.value) })}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">描述</label>
+                                    <textarea
+                                        value={editingGroup.description || ''}
+                                        onChange={e => setEditingGroup({ ...editingGroup, description: e.target.value })}
+                                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                                        rows={3}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Features */}
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-sm font-bold text-gray-700">拼团特性 (Features)</label>
+                                    <button type="button" onClick={addFeature} className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 flex items-center gap-1">
+                                        <Plus size={12} /> 添加
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    {(editingGroup.features || []).map((f, i) => (
+                                        <div key={i} className="flex gap-2">
+                                            <input
+                                                value={f}
+                                                onChange={e => updateFeature(i, e.target.value)}
+                                                className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                                                placeholder="例如：自动发货"
+                                            />
+                                            <button type="button" onClick={() => removeFeature(i)} className="text-gray-400 hover:text-red-500 p-2">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Toggles */}
+                            <div className="flex gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${editingGroup.isHot ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'}`}>
+                                        {editingGroup.isHot && <Check size={12} className="text-white" />}
+                                        <input type="checkbox" className="hidden" checked={editingGroup.isHot || false} onChange={e => setEditingGroup({ ...editingGroup, isHot: e.target.checked })} />
+                                    </div>
+                                    <span className="text-sm font-medium">设为热销</span>
+                                </label>
+
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${editingGroup.autoRenew ? 'bg-purple-600 border-purple-600' : 'bg-white border-gray-300'}`}>
+                                        {editingGroup.autoRenew && <Check size={12} className="text-white" />}
+                                        <input type="checkbox" className="hidden" checked={editingGroup.autoRenew || false} onChange={e => setEditingGroup({ ...editingGroup, autoRenew: e.target.checked })} />
+                                    </div>
+                                    <span className="text-sm font-medium">自动续期 (人满自动重开)</span>
+                                </label>
+                            </div>
+                        </form>
+
+                        <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                            <button onClick={() => setShowEditModal(false)} className="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-100">取消</button>
+                            <button onClick={handleSaveGroup} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm">保存</button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {showParticipantsModal && <ParticipantsModal />}
         </div>
     );

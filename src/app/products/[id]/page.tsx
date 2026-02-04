@@ -11,6 +11,10 @@ import { Product } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/GlobalToast';
 
+import { FirstTimeContactModal } from '@/components/FirstTimeContactModal';
+
+// ... (keep existing imports)
+
 export default function ProductDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -20,6 +24,11 @@ export default function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
     const [submitted, setSubmitted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+
+    // Contact enforcement
+    const [showContactModal, setShowContactModal] = useState(false);
+    const [userContacts, setUserContacts] = useState<{ type: string; value: string; label?: string }[]>([]);
+
     const { showToast } = useToast();
 
     // Prevent duplicate fetches (React StrictMode, fast re-renders)
@@ -45,8 +54,27 @@ export default function ProductDetailPage() {
         }
     }, []);
 
+    // Fetch user contacts
+    const fetchUserContacts = async () => {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data } = await supabase
+                .from('users')
+                .select('saved_contacts')
+                .eq('id', user.id)
+                .single();
+            if (data?.saved_contacts) {
+                setUserContacts(data.saved_contacts);
+            }
+        }
+    };
+
     useEffect(() => {
-        if (params.id) fetchProduct(params.id as string);
+        if (params.id) {
+            fetchProduct(params.id as string);
+            fetchUserContacts();
+        }
     }, [params.id, fetchProduct]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -58,6 +86,13 @@ export default function ProductDetailPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             router.push('/auth/login');
+            return;
+        }
+
+        // Force Contact Check
+        const hasValidContact = userContacts.some(c => c.type === 'WeChat' || c.type === 'Phone');
+        if (!hasValidContact) {
+            setShowContactModal(true);
             return;
         }
 
@@ -250,6 +285,19 @@ export default function ProductDetailPage() {
                     )}
                 </div>
             </div>
+
+            <FirstTimeContactModal
+                isOpen={showContactModal}
+                onClose={() => setShowContactModal(false)}
+                existingContacts={userContacts}
+                onSuccess={() => {
+                    fetchUserContacts();
+                    setShowContactModal(false);
+                    // Optionally triggers submit here or asks user to click again?
+                    // User has to click again after modal closes. Simple.
+                }}
+                allowSkip={false}
+            />
         </div>
     );
 }

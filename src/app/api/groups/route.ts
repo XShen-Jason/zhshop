@@ -138,6 +138,18 @@ export async function PUT(request: Request) {
                 .eq('id', id)
                 .single();
             oldGroup = data;
+
+            // [NEW] Validate all participants are contacted
+            const { data: uncontacted } = await supabase
+                .from('group_participants')
+                .select('user_id')
+                .eq('group_id', id)
+                .eq('is_contacted', false)
+                .limit(1); // Check if at least one exists
+
+            if (uncontacted && uncontacted.length > 0) {
+                return NextResponse.json({ error: 'There are uncontacted participants. Please contact everyone before ending the group.' }, { status: 400 });
+            }
         }
 
         const updateData: any = {};

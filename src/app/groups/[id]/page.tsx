@@ -9,6 +9,7 @@ import { ModifyParticipationModal } from '@/components/ModifyParticipationModal'
 import { ShareButton } from '@/components/ui/ShareButton';
 import { GroupBuy } from '@/types';
 import { createClient } from '@/lib/supabase/client';
+import { FirstTimeContactModal } from '@/components/FirstTimeContactModal';
 
 interface UserParticipation {
     quantity: number;
@@ -23,6 +24,10 @@ export default function GroupDetailPage() {
     const [userParticipation, setUserParticipation] = useState<UserParticipation | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    // Contact enforcement
+    const [showContactModal, setShowContactModal] = useState(false);
+    const [userContacts, setUserContacts] = useState<{ type: string; value: string; label?: string }[]>([]);
 
     // Prevent duplicate fetches (React StrictMode, fast re-renders)
     const fetchingRef = useRef(false);
@@ -51,6 +56,19 @@ export default function GroupDetailPage() {
         }
     }, [router]);
 
+    // Fetch user contacts helper
+    const fetchUserContacts = async (userId: string) => {
+        const supabase = createClient();
+        const { data } = await supabase
+            .from('users')
+            .select('saved_contacts')
+            .eq('id', userId)
+            .single();
+        if (data?.saved_contacts) {
+            setUserContacts(data.saved_contacts);
+        }
+    };
+
     useEffect(() => {
         async function fetchData() {
             if (!params.id) return;
@@ -71,6 +89,9 @@ export default function GroupDetailPage() {
                     setIsLoggedIn(!!user);
 
                     if (user) {
+                        // Fetch contacts
+                        await fetchUserContacts(user.id);
+
                         // Fetch user's participation in this group
                         const { data: participations } = await supabase
                             .from('group_participants')
@@ -102,6 +123,22 @@ export default function GroupDetailPage() {
         window.location.reload();
     };
 
+    const handleJoinClick = () => {
+        if (!isLoggedIn) {
+            router.push('/auth/login');
+            return;
+        }
+
+        // Force Contact Check on Join
+        const hasValidContact = userContacts.some(c => c.type === 'WeChat' || c.type === 'Phone');
+        if (!hasValidContact) {
+            setShowContactModal(true);
+            return;
+        }
+
+        setModalOpen(true);
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -131,6 +168,7 @@ export default function GroupDetailPage() {
             </div>
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
                 <div className="p-8 md:p-12">
+                    {/* ... (Keep existing content up to buttons) ... */}
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><Users size={20} /></div>
                         <Badge status={group.status} />
@@ -187,7 +225,7 @@ export default function GroupDetailPage() {
                         </div>
                     )}
 
-                    {/* User has participated but group is locked (still modifiable with warning) */}
+                    {/* User has participated but group is locked */}
                     {hasParticipation && group.status === '已锁单' && (
                         <div className="space-y-4">
                             <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
@@ -211,7 +249,7 @@ export default function GroupDetailPage() {
                         </div>
                     )}
 
-                    {/* User has participated but group is ended (not modifiable) */}
+                    {/* User has participated but group is ended */}
                     {hasParticipation && group.status === '已结束' && (
                         <div className="p-4 bg-gray-50 rounded-xl text-center">
                             <p className="text-gray-600">该拼团已结束，无法修改</p>
@@ -224,13 +262,7 @@ export default function GroupDetailPage() {
                     {/* User hasn't participated and group is active */}
                     {!hasParticipation && isActive && group.currentCount < group.targetCount && (
                         <button
-                            onClick={() => {
-                                if (!isLoggedIn) {
-                                    router.push('/auth/login');
-                                    return;
-                                }
-                                setModalOpen(true);
-                            }}
+                            onClick={handleJoinClick}
                             className="w-full py-4 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95"
                         >
                             加入拼团
@@ -266,6 +298,26 @@ export default function GroupDetailPage() {
                 userContactInfo={userParticipation?.contactInfo}
                 onSuccess={handleSuccess}
                 isNewParticipation={!hasParticipation}
+            />
+
+            <FirstTimeContactModal
+                isOpen={showContactModal}
+                onClose={() => setShowContactModal(false)}
+                existingContacts={userContacts}
+                onSuccess={() => {
+                    if (isLoggedIn) {
+                        // Re-fetch contacts logic? 
+                        // To be safe, we just reload the page or re-fetch contact list
+                        // Since we don't have user ID easily here without state, simplest is to 
+                        // just set valid temporary or force user to click again.
+                        const supabase = createClient();
+                        supabase.auth.getUser().then(({ data: { user } }) => {
+                            if (user) fetchUserContacts(user.id);
+                        });
+                    }
+                    setShowContactModal(false);
+                }}
+                allowSkip={false}
             />
         </div>
     );

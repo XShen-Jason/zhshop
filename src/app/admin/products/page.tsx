@@ -369,248 +369,24 @@ export default function AdminProductsPage() {
         );
     };
 
-    const ProductEditor = () => {
-        if (!editingProduct) return null;
+    // Product feature helpers
+    const addFeature = () => {
+        if (!editingProduct) return;
+        const newFeatures = [...(editingProduct.features || []), ''];
+        setEditingProduct({ ...editingProduct, features: newFeatures });
+    };
 
-        const addFeature = () => {
-            const newFeatures = [...(editingProduct.features || []), ''];
-            setEditingProduct({ ...editingProduct, features: newFeatures });
-        };
+    const updateFeature = (index: number, value: string) => {
+        if (!editingProduct) return;
+        const newFeatures = [...(editingProduct.features || [])];
+        newFeatures[index] = value;
+        setEditingProduct({ ...editingProduct, features: newFeatures });
+    };
 
-        const updateFeature = (index: number, value: string) => {
-            const newFeatures = [...(editingProduct.features || [])];
-            newFeatures[index] = value;
-            setEditingProduct({ ...editingProduct, features: newFeatures });
-        };
-
-        const removeFeature = (index: number) => {
-            const newFeatures = (editingProduct.features || []).filter((_, i) => i !== index);
-            setEditingProduct({ ...editingProduct, features: newFeatures });
-        };
-
-        return (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowEditModal(false)}>
-                <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                    <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                        <div>
-                            <h3 className="font-bold text-xl text-gray-900">{editingProduct.id ? '编辑商品' : '发布新商品'}</h3>
-                            <p className="text-sm text-gray-500 mt-1">完善商品详情信息</p>
-                        </div>
-                        <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
-                            <X size={24} />
-                        </button>
-                    </div>
-
-                    <form onSubmit={handleSaveProduct} className="flex-1 overflow-y-auto p-6 md:p-8 scrollbar-thin">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-6">
-                                <section>
-                                    <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                        <Package size={16} className="text-indigo-600" /> 基本信息
-                                    </h4>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">商品名称 <span className="text-red-500">*</span></label>
-                                            <input
-                                                type="text"
-                                                value={editingProduct.title || ''}
-                                                onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })}
-                                                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-300"
-                                                placeholder="输入商品名称"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">商品描述</label>
-                                            <textarea
-                                                value={editingProduct.description || ''}
-                                                onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                                                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-300 min-h-[120px]"
-                                                placeholder="简要描述商品特点..."
-                                                rows={4}
-                                            />
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <section>
-                                    <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                        <Layers size={16} className="text-indigo-600" /> 分类与库存
-                                    </h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">一级分类 <span className="text-red-500">*</span></label>
-                                            <input
-                                                list="category-options"
-                                                type="text"
-                                                value={editingProduct.category || ''}
-                                                onChange={e => setEditingProduct({ ...editingProduct, category: e.target.value })}
-                                                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                                                placeholder="选择或输入"
-                                                required
-                                            />
-                                            <datalist id="category-options">
-                                                {categories.list.map(c => <option key={c} value={c} />)}
-                                            </datalist>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">二级分类</label>
-                                            <input
-                                                list="subcategory-options"
-                                                type="text"
-                                                value={editingProduct.subCategory || ''}
-                                                onChange={e => setEditingProduct({ ...editingProduct, subCategory: e.target.value })}
-                                                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                                                placeholder="选择或输入"
-                                            />
-                                            <datalist id="subcategory-options">
-                                                {editingProduct.category && categories.subs.get(editingProduct.category) &&
-                                                    Array.from(categories.subs.get(editingProduct.category)!).map(s => <option key={s} value={s} />)
-                                                }
-                                            </datalist>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 mt-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">价格 (￥) <span className="text-red-500">*</span></label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-sans">￥</span>
-                                                <input
-                                                    type="number"
-                                                    value={editingProduct.price || ''}
-                                                    onChange={e => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) })}
-                                                    className="w-full border border-gray-200 rounded-lg pl-8 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                                                    step="0.01"
-                                                    placeholder="0.00"
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">库存数量</label>
-                                            <input
-                                                type="number"
-                                                value={editingProduct.stock || ''}
-                                                onChange={e => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) })}
-                                                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                                                placeholder="0"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 mt-4">
-                                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-200">
-                                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${editingProduct.isHot ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'}`}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={editingProduct.isHot || false}
-                                                    onChange={e => setEditingProduct({ ...editingProduct, isHot: e.target.checked })}
-                                                    className="hidden"
-                                                />
-                                                {editingProduct.isHot && <Check size={12} className="text-white" />}
-                                            </div>
-                                            <span className="font-medium">设为热销商品</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-200">
-                                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${editingProduct.inStock !== false ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-gray-300'}`}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={editingProduct.inStock !== false}
-                                                    onChange={e => setEditingProduct({ ...editingProduct, inStock: e.target.checked })}
-                                                    className="hidden"
-                                                />
-                                                {editingProduct.inStock !== false && <Check size={12} className="text-white" />}
-                                            </div>
-                                            <span className="font-medium">上架销售</span>
-                                        </label>
-                                    </div>
-                                </section>
-                            </div>
-
-                            <div className="space-y-6">
-                                <section>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                            <Settings size={16} className="text-indigo-600" /> 商品特性 (Features)
-                                        </h4>
-                                        <button
-                                            type="button"
-                                            onClick={addFeature}
-                                            className="text-xs flex items-center gap-1 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors"
-                                        >
-                                            <Plus size={12} /> 添加特性
-                                        </button>
-                                    </div>
-                                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                                        {(editingProduct.features || []).map((feature, idx) => (
-                                            <div key={idx} className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={feature}
-                                                    onChange={e => updateFeature(idx, e.target.value)}
-                                                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none"
-                                                    placeholder={`特性 #${idx + 1}`}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeFeature(idx)}
-                                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {(!editingProduct.features || editingProduct.features.length === 0) && (
-                                            <div className="text-center py-8 bg-gray-50 border border-dashed border-gray-200 rounded-lg text-gray-400 text-xs">
-                                                暂无特性，点击上方按钮添加
-                                            </div>
-                                        )}
-                                    </div>
-                                </section>
-
-                                <section>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">图片 URL</label>
-                                        <input
-                                            type="url"
-                                            value={editingProduct.image_url || ''}
-                                            onChange={e => setEditingProduct({ ...editingProduct, image_url: e.target.value })}
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-500"
-                                            placeholder="https://..."
-                                        />
-                                        {editingProduct.image_url && (
-                                            <div className="mt-3 aspect-video rounded-lg bg-gray-100 border border-gray-200 overflow-hidden relative group">
-                                                <img src={editingProduct.image_url} alt="Reference" className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <span className="text-white text-xs font-medium">预览图</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </section>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-100">
-                            <button
-                                type="button"
-                                onClick={() => setShowEditModal(false)}
-                                className="px-6 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-colors"
-                            >
-                                取消
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2"
-                            >
-                                <Save size={18} />
-                                {editingProduct.id ? '保存更改' : '立即发布'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        );
+    const removeFeature = (index: number) => {
+        if (!editingProduct) return;
+        const newFeatures = (editingProduct.features || []).filter((_, i) => i !== index);
+        setEditingProduct({ ...editingProduct, features: newFeatures });
     };
 
     if (loading && products.length === 0) {
@@ -800,7 +576,229 @@ export default function AdminProductsPage() {
             </div>
 
             {showCategoryManager && <CategoryManager />}
-            {showEditModal && <ProductEditor />}
+            {showEditModal && editingProduct && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowEditModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h3 className="font-bold text-xl text-gray-900">{editingProduct.id ? '编辑商品' : '发布新商品'}</h3>
+                                <p className="text-sm text-gray-500 mt-1">完善商品详情信息</p>
+                            </div>
+                            <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSaveProduct} className="flex-1 overflow-y-auto p-6 md:p-8 scrollbar-thin">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-6">
+                                    <section>
+                                        <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                            <Package size={16} className="text-indigo-600" /> 基本信息
+                                        </h4>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">商品名称 <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    value={editingProduct.title || ''}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })}
+                                                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-300"
+                                                    placeholder="输入商品名称"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">商品描述</label>
+                                                <textarea
+                                                    value={editingProduct.description || ''}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                                                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-300 min-h-[120px]"
+                                                    placeholder="简要描述商品特点..."
+                                                    rows={4}
+                                                />
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section>
+                                        <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                            <Layers size={16} className="text-indigo-600" /> 分类与库存
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">一级分类 <span className="text-red-500">*</span></label>
+                                                <input
+                                                    list="category-options"
+                                                    type="text"
+                                                    value={editingProduct.category || ''}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, category: e.target.value })}
+                                                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                                                    placeholder="选择或输入"
+                                                    required
+                                                />
+                                                <datalist id="category-options">
+                                                    {categories.list.map(c => <option key={c} value={c} />)}
+                                                </datalist>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">二级分类</label>
+                                                <input
+                                                    list="subcategory-options"
+                                                    type="text"
+                                                    value={editingProduct.subCategory || ''}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, subCategory: e.target.value })}
+                                                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                                                    placeholder="选择或输入"
+                                                />
+                                                <datalist id="subcategory-options">
+                                                    {editingProduct.category && categories.subs.get(editingProduct.category) &&
+                                                        Array.from(categories.subs.get(editingProduct.category)!).map(s => <option key={s} value={s} />)
+                                                    }
+                                                </datalist>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 mt-4">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">价格 (￥) <span className="text-red-500">*</span></label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-sans">￥</span>
+                                                    <input
+                                                        type="number"
+                                                        value={editingProduct.price || ''}
+                                                        onChange={e => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) })}
+                                                        className="w-full border border-gray-200 rounded-lg pl-8 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                                                        step="0.01"
+                                                        placeholder="0.00"
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">库存数量</label>
+                                                <input
+                                                    type="number"
+                                                    value={editingProduct.stock || ''}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) })}
+                                                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 mt-4">
+                                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-200">
+                                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${editingProduct.isHot ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={editingProduct.isHot || false}
+                                                        onChange={e => setEditingProduct({ ...editingProduct, isHot: e.target.checked })}
+                                                        className="hidden"
+                                                    />
+                                                    {editingProduct.isHot && <Check size={12} className="text-white" />}
+                                                </div>
+                                                <span className="font-medium">设为热销商品</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-200">
+                                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${editingProduct.inStock !== false ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-gray-300'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={editingProduct.inStock !== false}
+                                                        onChange={e => setEditingProduct({ ...editingProduct, inStock: e.target.checked })}
+                                                        className="hidden"
+                                                    />
+                                                    {editingProduct.inStock !== false && <Check size={12} className="text-white" />}
+                                                </div>
+                                                <span className="font-medium">上架销售</span>
+                                            </label>
+                                        </div>
+                                    </section>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <section>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                                <Settings size={16} className="text-indigo-600" /> 商品特性 (Features)
+                                            </h4>
+                                            <button
+                                                type="button"
+                                                onClick={addFeature}
+                                                className="text-xs flex items-center gap-1 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors"
+                                            >
+                                                <Plus size={12} /> 添加特性
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                                            {(editingProduct.features || []).map((feature, idx) => (
+                                                <div key={idx} className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={feature}
+                                                        onChange={e => updateFeature(idx, e.target.value)}
+                                                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none"
+                                                        placeholder={`特性 #${idx + 1}`}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeFeature(idx)}
+                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {(!editingProduct.features || editingProduct.features.length === 0) && (
+                                                <div className="text-center py-8 bg-gray-50 border border-dashed border-gray-200 rounded-lg text-gray-400 text-xs">
+                                                    暂无特性，点击上方按钮添加
+                                                </div>
+                                            )}
+                                        </div>
+                                    </section>
+
+                                    <section>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">图片 URL</label>
+                                            <input
+                                                type="url"
+                                                value={editingProduct.image_url || ''}
+                                                onChange={e => setEditingProduct({ ...editingProduct, image_url: e.target.value })}
+                                                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-500"
+                                                placeholder="https://..."
+                                            />
+                                            {editingProduct.image_url && (
+                                                <div className="mt-3 aspect-video rounded-lg bg-gray-100 border border-gray-200 overflow-hidden relative group">
+                                                    <img src={editingProduct.image_url} alt="Reference" className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <span className="text-white text-xs font-medium">预览图</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
+                                    className="px-6 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2"
+                                >
+                                    <Save size={18} />
+                                    {editingProduct.id ? '保存更改' : '立即发布'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

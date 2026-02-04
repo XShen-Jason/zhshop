@@ -14,6 +14,10 @@ import { Lottery } from '@/types';
 import { useToast } from '@/lib/GlobalToast';
 import { useConfirm } from '@/lib/ConfirmContext';
 
+import { FirstTimeContactModal } from '@/components/FirstTimeContactModal';
+
+// ... (keep existing imports)
+
 // Extended type for detail view
 interface LotteryDetail extends Lottery {
     prizes: string[];
@@ -31,6 +35,10 @@ export default function LotteryDetailPage() {
     const [contactInfo, setContactInfo] = useState('');
     const { showToast } = useToast();
     const { confirm } = useConfirm();
+
+    // Contact enforcement
+    const [showContactModal, setShowContactModal] = useState(false);
+    const [userContacts, setUserContacts] = useState<{ type: string; value: string; label?: string }[]>([]);
 
     // Prevent duplicate fetches
     const fetchingRef = useRef(false);
@@ -61,9 +69,26 @@ export default function LotteryDetailPage() {
         }
     }, []);
 
+    // Fetch user contacts helper
+    const fetchUserContacts = async () => {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data } = await supabase
+                .from('users')
+                .select('saved_contacts')
+                .eq('id', user.id)
+                .single();
+            if (data?.saved_contacts) {
+                setUserContacts(data.saved_contacts);
+            }
+        }
+    };
+
     useEffect(() => {
         if (params.id) {
             fetchLottery(params.id as string);
+            fetchUserContacts();
         }
     }, [params.id, fetchLottery]);
 
@@ -78,6 +103,13 @@ export default function LotteryDetailPage() {
             // Redirect to login with return URL
             const returnUrl = encodeURIComponent(`/lottery/${lottery.id}`);
             router.push(`/auth/login?redirect=${returnUrl}`);
+            return;
+        }
+
+        // Force Contact Check
+        const hasValidContact = userContacts.some(c => c.type === 'WeChat' || c.type === 'Phone');
+        if (!hasValidContact) {
+            setShowContactModal(true);
             return;
         }
 
@@ -183,6 +215,7 @@ export default function LotteryDetailPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {/* Left Info */}
                         <div className="md:col-span-2 space-y-8">
+                            {/* ... (Keep existing sections) ... */}
                             <section>
                                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                                     <Gift size={20} className="mr-2 text-pink-500" />
@@ -289,6 +322,17 @@ export default function LotteryDetailPage() {
                     </div>
                 </div>
             </div>
+
+            <FirstTimeContactModal
+                isOpen={showContactModal}
+                onClose={() => setShowContactModal(false)}
+                existingContacts={userContacts}
+                onSuccess={() => {
+                    fetchUserContacts(); // Refresh contact list
+                    setShowContactModal(false);
+                }}
+                allowSkip={false}
+            />
         </div>
     );
 }
