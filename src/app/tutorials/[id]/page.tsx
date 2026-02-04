@@ -9,6 +9,8 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/atom-one-dark.css';
 
+import { ShareButton } from '@/components/ui/ShareButton';
+
 // Alert Helper Component
 const AlertBlock = ({ type, children }: { type: string, children: React.ReactNode }) => {
     const styles = {
@@ -70,11 +72,20 @@ export default function TutorialDetailPage() {
         );
     }
 
+    // Extract raw text from markdown/html for share preview (simple strip)
+    const shareText = tutorial.format === 'html'
+        ? tutorial.content.replace(/<[^>]+>/g, '').slice(0, 50)
+        : tutorial.content.slice(0, 50);
+
     return (
         <div className="p-6 max-w-4xl mx-auto">
-            <button onClick={() => router.back()} className="text-sm text-gray-500 hover:text-gray-900 mb-6 flex items-center transition-colors">
-                <ArrowRight className="rotate-180 mr-2" size={16} /> 返回列表
-            </button>
+            <div className="flex justify-between items-center mb-6">
+                <button onClick={() => router.back()} className="text-sm text-gray-500 hover:text-gray-900 flex items-center transition-colors">
+                    <ArrowRight className="rotate-180 mr-2" size={16} /> 返回列表
+                </button>
+                <ShareButton title={tutorial.title} text={`${shareText}...`} />
+            </div>
+
             <article className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden p-8 md:p-12">
                 <div className="flex gap-2 mb-6 flex-wrap">
                     {(tutorial.tags || []).map(tag => (
