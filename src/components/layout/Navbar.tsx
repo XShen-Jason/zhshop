@@ -314,7 +314,21 @@ export const Navbar: React.FC<NavbarProps> = ({ user: initialUser = null }) => {
                         </div>
 
                         {/* Mobile: User Center button on right */}
-                        <div className="md:hidden flex items-center">
+                        <div className="md:hidden flex items-center gap-2">
+                            {!loading && user && (
+                                <Link
+                                    href="/messages"
+                                    className="relative p-1.5 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <Bell size={20} />
+                                    {unreadCount > 0 && (
+                                        <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 border border-white">
+                                            {unreadCount > 99 ? '99+' : unreadCount}
+                                        </span>
+                                    )}
+                                </Link>
+                            )}
+
                             {!loading && user ? (
                                 <Link
                                     href="/user"

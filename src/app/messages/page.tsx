@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Bell, Check, ChevronRight, Image as ImageIcon, Users, Megaphone, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Bell, ChevronRight, Image as ImageIcon, Users, Megaphone, User as UserIcon, ArrowRight as ArrowRightIcon } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { messageEvents } from '@/lib/events';
 
 interface Message {
@@ -18,6 +19,7 @@ interface Message {
 }
 
 export default function MessagesPage() {
+    const router = useRouter(); // Use router for back navigation if needed
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
@@ -73,8 +75,8 @@ export default function MessagesPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-600 border-t-transparent"></div>
+            <div className="min-h-[60vh] bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
             </div>
         );
     }
@@ -82,79 +84,83 @@ export default function MessagesPage() {
     // Message detail view
     if (selectedMessage) {
         return (
-            <div className="min-h-screen bg-gray-50">
-                <header className="bg-white border-b sticky top-0 z-10">
-                    <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-                        <button
-                            onClick={() => setSelectedMessage(null)}
-                            className="p-2 -ml-2 hover:bg-gray-100 rounded-lg"
-                        >
-                            <ArrowLeft size={20} />
-                        </button>
-                        <h1 className="font-bold text-lg truncate">{selectedMessage.title}</h1>
-                    </div>
-                </header>
+            <div className="p-6 max-w-4xl mx-auto min-h-screen">
+                <div className="flex justify-between items-center mb-6">
+                    <button
+                        onClick={() => setSelectedMessage(null)}
+                        className="text-sm text-gray-500 hover:text-gray-900 flex items-center transition-colors"
+                    >
+                        <ArrowRightIcon className="rotate-180 mr-2" size={16} /> 返回列表
+                    </button>
+                </div>
 
-                <main className="max-w-2xl mx-auto px-4 py-6">
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                            {selectedMessage.type === 'announcement' ? (
-                                <><Megaphone size={16} className="text-indigo-500" /> 系统公告</>
-                            ) : selectedMessage.type === 'user_specific' ? (
-                                <><UserIcon size={16} className="text-blue-500" /> 私信</>
-                            ) : (
-                                <><Users size={16} className="text-green-500" /> 拼团通知 · {selectedMessage.groupTitle}</>
-                            )}
-                            <span className="ml-auto">{formatTime(selectedMessage.created_at)}</span>
-                        </div>
-
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">{selectedMessage.title}</h2>
-
-                        {selectedMessage.image_url && (
-                            <img
-                                src={selectedMessage.image_url}
-                                alt=""
-                                className="w-full rounded-lg mb-4 max-h-80 object-cover"
-                            />
+                <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden p-6 md:p-12">
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+                        {selectedMessage.type === 'announcement' ? (
+                            <span className="flex items-center gap-1 bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-xs font-bold">
+                                <Megaphone size={14} /> 系统公告
+                            </span>
+                        ) : selectedMessage.type === 'user_specific' ? (
+                            <span className="flex items-center gap-1 bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">
+                                <UserIcon size={14} /> 私信
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-1 bg-green-50 text-green-600 px-3 py-1 rounded-full text-xs font-bold">
+                                <Users size={14} /> 拼团通知
+                            </span>
                         )}
-
-                        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
-                            {selectedMessage.content}
-                        </div>
+                        <span className="ml-auto">{formatTime(selectedMessage.created_at)}</span>
                     </div>
-                </main>
+
+                    <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-6">{selectedMessage.title}</h1>
+
+                    {selectedMessage.groupTitle && (
+                        <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <div className="text-xs text-gray-400 mb-1">关联拼团</div>
+                            <div className="font-medium text-gray-900">{selectedMessage.groupTitle}</div>
+                        </div>
+                    )}
+
+                    {selectedMessage.image_url && (
+                        <img
+                            src={selectedMessage.image_url}
+                            alt=""
+                            className="w-full rounded-2xl mb-8 shadow-sm border border-gray-100"
+                        />
+                    )}
+
+                    <div className="prose prose-lg max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed">
+                        {selectedMessage.content}
+                    </div>
+                </div>
             </div>
         );
     }
 
     // Message list view
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            <header className="bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-gray-100/50">
-                <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/user" className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition-all hover:scale-105 active:scale-95">
-                            <ArrowLeft size={22} />
-                        </Link>
-                        <h1 className="font-bold text-xl text-gray-900 tracking-tight">消息中心</h1>
-                    </div>
-
-                    {messages.filter(m => !m.isRead).length > 0 && (
-                        <span className="bg-red-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm shadow-red-200 animate-in zoom-in">
-                            {messages.filter(m => !m.isRead).length} 未读
-                        </span>
-                    )}
+        <div className="max-w-4xl mx-auto min-h-screen pt-4 md:pt-8 pb-12 px-4 sm:px-6">
+            {/* Header */}
+            <div className="flex justify-between items-end mb-6 md:mb-8">
+                <div>
+                    <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-1 md:mb-2">消息中心</h2>
+                    <p className="text-sm md:text-base text-gray-500">查看您的所有通知与私信</p>
                 </div>
-            </header>
+                {messages.filter(m => !m.isRead).length > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md shadow-red-200 animate-in zoom-in mb-2">
+                        {messages.filter(m => !m.isRead).length} 未读
+                    </span>
+                )}
+            </div>
 
-            <main className="max-w-3xl mx-auto px-4 py-6">
+            <main>
                 {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-32 text-center opacity-0 animate-in fade-in duration-700 slide-in-from-bottom-4">
-                        <div className="w-24 h-24 bg-gradient-to-tr from-indigo-50 to-white rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-indigo-50/50">
-                            <Bell size={40} className="text-indigo-200" />
+                    <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
+                        <div className="mx-auto w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+                            <Bell size={32} className="text-indigo-400" />
                         </div>
-                        <h3 className="text-gray-900 font-semibold text-lg mb-2">暂无消息</h3>
-                        <p className="text-gray-400 text-sm max-w-xs leading-relaxed">当有新的拼团动态、系统公告或私信时，我们会第一时间通知您。</p>
+                        <h3 className="text-gray-900 font-bold text-lg mb-2">暂无消息</h3>
+                        <p className="text-gray-500 text-sm">当有新的拼团动态、系统公告或私信时，我们会第一时间通知您。</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -163,9 +169,9 @@ export default function MessagesPage() {
                                 key={message.id}
                                 onClick={() => openMessage(message)}
                                 style={{ animationDelay: `${index * 50}ms` }}
-                                className={`w-full text-left bg-white rounded-2xl p-5 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.08)] border transition-all duration-300 active:scale-[0.98] flex items-start gap-5 group animate-in fade-in slide-in-from-bottom-2 ${!message.isRead
-                                    ? 'border-indigo-100/60 ring-4 ring-indigo-50/30'
-                                    : 'border-transparent hover:border-gray-100'
+                                className={`w-full text-left bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border transition-all duration-300 active:scale-[0.99] flex items-start gap-4 md:gap-6 group animate-in fade-in slide-in-from-bottom-2 ${!message.isRead
+                                    ? 'border-indigo-100 ring-2 ring-indigo-50'
+                                    : 'border-gray-100'
                                     }`}
                             >
                                 {/* Icon with status indicator */}
@@ -179,43 +185,40 @@ export default function MessagesPage() {
                                         {message.type === 'announcement' ? <Megaphone size={20} /> : message.type === 'user_specific' ? <UserIcon size={20} /> : <Users size={20} />}
                                     </div>
                                     {!message.isRead && (
-                                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white rounded-full shadow-sm animate-pulse"></span>
+                                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full shadow-sm animate-pulse"></span>
                                     )}
                                 </div>
 
                                 {/* Content */}
-                                <div className="flex-1 min-w-0 py-0.5">
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <h3 className={`font-semibold text-base truncate pr-4 transition-colors ${!message.isRead ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
+                                <div className="flex-1 min-w-0 py-1">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <h3 className={`font-bold text-base truncate pr-4 transition-colors ${!message.isRead ? 'text-gray-900' : 'text-gray-700 group-hover:text-gray-900'}`}>
                                             {message.title}
                                         </h3>
-                                        <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0 font-medium bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
+                                        <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
                                             {formatTime(message.created_at)}
                                         </span>
                                     </div>
 
-                                    <p className={`text-sm line-clamp-2 leading-relaxed mb-3 ${!message.isRead ? 'text-gray-600' : 'text-gray-400 group-hover:text-gray-500'}`}>
+                                    <p className={`text-sm line-clamp-2 leading-relaxed mb-2 ${!message.isRead ? 'text-gray-600 font-medium' : 'text-gray-400 group-hover:text-gray-500'}`}>
                                         {message.content}
                                     </p>
 
-                                    {(message.image_url || message.groupTitle) && (
-                                        <div className="flex items-center gap-2">
-                                            {message.groupTitle && (
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-50 text-gray-600 group-hover:bg-gray-100 transition-colors border border-gray-100 group-hover:border-gray-200">
-                                                    {message.groupTitle}
-                                                </span>
-                                            )}
-                                            {message.image_url && (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-indigo-600 bg-indigo-50 group-hover:bg-indigo-100 transition-colors">
-                                                    <ImageIcon size={14} />
-                                                    <span>图片附件</span>
-                                                </span>
-                                            )}
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        {message.groupTitle && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-50 text-gray-500 border border-gray-100">
+                                                {message.groupTitle}
+                                            </span>
+                                        )}
+                                        {message.type === 'announcement' && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-500 border border-indigo-100">
+                                                官方公告
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div className="self-center opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-gray-300">
+                                <div className="self-center hidden md:block opacity-0 group-hover:opacity-100 transition-opacity text-gray-300">
                                     <ChevronRight size={20} />
                                 </div>
                             </button>
