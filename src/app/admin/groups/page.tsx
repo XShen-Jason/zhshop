@@ -334,9 +334,26 @@ export default function AdminGroupsPage() {
             setIsEditingQty(false);
         };
 
-        const copyToClipboard = (text: string) => {
-            navigator.clipboard.writeText(text);
-            showToast('已复制到剪贴板', 'success');
+        const copyToClipboard = async (text: string) => {
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-9999px";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+                showToast('已复制到剪贴板', 'success');
+            } catch (error) {
+                console.error('Copy failed:', error);
+                showToast('复制失败，请手动复制', 'error');
+            }
         };
 
         // Aggregation & Priority Logic for Contacts
@@ -378,9 +395,9 @@ export default function AdminGroupsPage() {
                 title="点击复制"
             >
                 <span className={`text-[10px] min-w-[36px] px-1 text-center py-0.5 rounded font-bold uppercase tracking-wider ${type === 'qq' ? 'bg-blue-100 text-blue-600' :
-                        type === 'wechat' || type === 'wx' ? 'bg-green-100 text-green-600' :
-                            type === 'phone' || type === 'shouji' ? 'bg-orange-100 text-orange-600' :
-                                'bg-gray-100 text-gray-500'
+                    type === 'wechat' || type === 'wx' ? 'bg-green-100 text-green-600' :
+                        type === 'phone' || type === 'shouji' ? 'bg-orange-100 text-orange-600' :
+                            'bg-gray-100 text-gray-500'
                     }`}>
                     {type === 'wechat' || type === 'wx' ? 'WX' : type === 'contact' ? '其它' : type === 'phone' ? '手机' : type.toUpperCase()}
                 </span>
