@@ -98,6 +98,71 @@ export default function AdminTutorialsPage() {
 
     return (
         <div className="space-y-4">
+            {/* H5 Rules Alert */}
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                <h3 className="text-blue-800 font-bold mb-2 flex items-center gap-2">
+                    <span className="text-xl">⚠️</span> H5 内容发布规范 V2.0 (完美适配版)
+                </h3>
+                <div className="text-sm text-blue-700 space-y-1 mb-3 list-decimal list-inside">
+                    <p>1. 必须使用 <strong>class</strong> 而不是 className。</p>
+                    <p>2. <strong>根容器</strong>请使用：<code>w-full rounded-xl overflow-hidden</code> (自动充满卡片且圆角)。</p>
+                    <p>3. <strong>禁止</strong>使用 <code>fixed</code> (定位) 和 <code>min-h-screen</code> (全屏高度)，否则会破坏布局。</p>
+                    <p>4. 底部按钮使用普通文档流 (static/margin-top)，不要固定在底部。</p>
+                </div>
+                <div className="bg-slate-800 rounded-lg p-3 relative group">
+                    <div className="absolute top-2 right-2">
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(`<div class="w-full bg-black text-white font-sans rounded-xl overflow-hidden">
+    <!-- Header / Content -->
+    <div class="p-6 space-y-4">
+        <h1 class="text-2xl font-bold text-center">活动标题</h1>
+        <p class="text-gray-300">这里是活动内容...</p>
+    </div>
+
+    <!-- Steps Example -->
+    <div class="px-6 pb-4 space-y-4">
+        <div class="bg-gray-900 p-4 rounded-lg">步骤一</div>
+    </div>
+
+    <!-- Footer Action (Static, No Fixed) -->
+    <div class="w-full p-4 border-t border-gray-800 mt-8">
+        <a href="#" class="block w-full py-3 bg-lime-400 text-black font-bold text-center rounded-full">
+            立即参与
+        </a>
+    </div>
+</div>`);
+                                showToast('标准模板已复制', 'success');
+                            }}
+                            className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded border border-white/20 transition-colors"
+                        >
+                            复制 V2.0 标准模板
+                        </button>
+                    </div>
+                    <pre className="text-xs text-green-400 font-mono overflow-x-auto pt-8 pb-2">
+                        {`<div class="w-full bg-black text-white font-sans rounded-xl overflow-hidden">
+    <!-- Header / Content -->
+    <div class="p-6 space-y-4">
+        <h1 class="text-2xl font-bold text-center">活动标题</h1>
+        <p class="text-gray-300">这里是活动内容...</p>
+    </div>
+
+    <!-- Steps Example -->
+    <div class="px-6 pb-4 space-y-4">
+        <div class="bg-gray-900 p-4 rounded-lg">步骤一</div>
+    </div>
+
+    <!-- Footer Action (Static, No Fixed) -->
+    <div class="w-full p-4 border-t border-gray-800 mt-8">
+        <a href="#" class="block w-full py-3 bg-lime-400 text-black font-bold text-center rounded-full">
+            立即参与
+        </a>
+    </div>
+</div>`}
+                    </pre>
+                </div>
+            </div>
+
             {/* Header */}
             <div className="flex justify-between items-center">
                 <h2 className="text-lg font-bold">教程管理</h2>
@@ -182,11 +247,38 @@ export default function AdminTutorialsPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">内容 (Markdown)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">内容格式</label>
+                                <div className="flex gap-4 mb-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="format"
+                                            value="md"
+                                            checked={!editing?.format || editing?.format === 'md'}
+                                            onChange={() => setEditing({ ...editing, format: 'md' })}
+                                        />
+                                        <span className="text-sm">Markdown</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="format"
+                                            value="html"
+                                            checked={editing?.format === 'html'}
+                                            onChange={() => setEditing({ ...editing, format: 'html' })}
+                                        />
+                                        <span className="text-sm">HTML</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">内容</label>
                                 <MarkdownEditor
                                     value={editing?.content || ''}
                                     onChange={content => setEditing({ ...editing, content })}
-                                    placeholder="支持 Markdown 格式..."
+                                    format={editing?.format || 'md'}
+                                    placeholder={editing?.format === 'html' ? "请输入 HTML 代码..." : "支持 Markdown 格式..."}
                                 />
                             </div>
 

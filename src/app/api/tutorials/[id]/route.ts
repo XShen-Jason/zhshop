@@ -29,7 +29,9 @@ export async function GET(
             category: data.category,
             tags: data.tags || [],
             relatedProductId: data.related_product_id,
-            isLocked: data.is_locked
+            isLocked: data.is_locked,
+            imageUrl: data.image_url,
+            format: (data.tags || []).includes('html-mode') ? 'html' : 'md'
         };
 
         return NextResponse.json(tutorial);

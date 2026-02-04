@@ -61,6 +61,7 @@ export interface Tutorial {
     isLocked?: boolean;
     isHot?: boolean;
     imageUrl?: string;
+    format?: 'md' | 'html';
 }
 
 export interface GroupBuy {

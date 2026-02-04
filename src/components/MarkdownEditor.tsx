@@ -12,18 +12,27 @@ interface MarkdownEditorProps {
     onChange: (value: string) => void;
     placeholder?: string;
     minHeight?: string;
+    format?: 'md' | 'html';
 }
 
 export default function MarkdownEditor({
     value,
     onChange,
-    placeholder = '支持 Markdown 语法，可直接粘贴图片...',
-    minHeight = '400px'
+    placeholder,
+    minHeight = '400px',
+    format = 'md'
 }: MarkdownEditorProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [uploading, setUploading] = useState(false);
     const [previewMode, setPreviewMode] = useState(false);
     const { showToast } = useToast();
+
+    // Default placeholder based on format
+    const defaultPlaceholder = format === 'md'
+        ? '支持 Markdown 语法，可直接粘贴图片...'
+        : '请输入 HTML 代码...';
+
+    const actualPlaceholder = placeholder || defaultPlaceholder;
 
     // Handle paste event for images
     const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
@@ -163,12 +172,16 @@ export default function MarkdownEditor({
                 {previewMode ? (
                     <div className="p-4 prose prose-sm max-w-none overflow-y-auto" style={{ minHeight }}>
                         {value ? (
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                rehypePlugins={[rehypeHighlight]}
-                            >
-                                {value}
-                            </ReactMarkdown>
+                            format === 'html' ? (
+                                <div dangerouslySetInnerHTML={{ __html: value }} />
+                            ) : (
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    rehypePlugins={[rehypeHighlight]}
+                                >
+                                    {value}
+                                </ReactMarkdown>
+                            )
                         ) : (
                             <p className="text-gray-400">没有内容可预览</p>
                         )}
@@ -181,7 +194,7 @@ export default function MarkdownEditor({
                         onPaste={handlePaste}
                         onDrop={handleDrop}
                         onDragOver={handleDragOver}
-                        placeholder={placeholder}
+                        placeholder={actualPlaceholder}
                         className="w-full p-4 font-mono text-sm resize-none outline-none"
                         style={{ minHeight }}
                     />
@@ -190,7 +203,10 @@ export default function MarkdownEditor({
 
             {/* Help text */}
             <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-400">
-                支持 Markdown 语法 • 直接粘贴或拖放图片上传 • 支持代码高亮
+                {format === 'md'
+                    ? '支持 Markdown 语法 • 直接粘贴或拖放图片上传 • 支持代码高亮'
+                    : '支持 HTML 代码 • 请确保标签闭合 • 支持内联样式'
+                }
             </div>
         </div>
     );

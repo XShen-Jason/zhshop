@@ -84,56 +84,60 @@ export default function TutorialDetailPage() {
                 <h1 className="text-3xl font-extrabold text-gray-900 mb-4">{tutorial.title}</h1>
                 <p className="text-gray-500 mb-8">更新于: {tutorial.updatedAt?.split('T')[0]}</p>
 
-                <div className="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-indigo-600 prose-img:rounded-xl prose-img:shadow-md prose-pre:bg-[#282c34] prose-pre:text-gray-100">
-                    <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeHighlight]}
-                        components={{
-                            blockquote: ({ node, children, ...props }) => {
-                                // Extract text content to check for alert syntax
-                                // ReactMarkdown structure is complex, simplified check:
-                                const content = React.Children.toArray(children);
-                                const firstChild = content[0] as any;
+                {tutorial.format === 'html' ? (
+                    <div className="w-full" dangerouslySetInnerHTML={{ __html: tutorial.content }} />
+                ) : (
+                    <div className="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-indigo-600 prose-img:rounded-xl prose-img:shadow-md prose-pre:bg-[#282c34] prose-pre:text-gray-100">
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeHighlight]}
+                            components={{
+                                blockquote: ({ node, children, ...props }) => {
+                                    // Extract text content to check for alert syntax
+                                    // ReactMarkdown structure is complex, simplified check:
+                                    const content = React.Children.toArray(children);
+                                    const firstChild = content[0] as any;
 
-                                // Check if first child is a paragraph with alert text
-                                if (firstChild?.props?.node?.tagName === 'p') {
-                                    const pText = firstChild.props.children?.[0];
-                                    if (typeof pText === 'string') {
-                                        const match = pText.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/);
-                                        if (match) {
-                                            const type = match[1];
-                                            // Eliminate the trigger text from the first paragraph
-                                            const cleanChildren = React.Children.map(content, (child, index) => {
-                                                if (index === 0 && React.isValidElement(child)) {
-                                                    const grandChildren = React.Children.toArray((child as any).props.children);
-                                                    // Remove the first text node if it matches or replace it
-                                                    if (typeof grandChildren[0] === 'string' && grandChildren[0].startsWith(match[0])) {
-                                                        const newText = grandChildren[0].replace(match[0], '').trim();
-                                                        // Update the paragraph's children. If text empty, maybe remove? 
-                                                        // For simplicity, just return rest.
-                                                        if (!newText && grandChildren.length === 1) return null; // empty P
+                                    // Check if first child is a paragraph with alert text
+                                    if (firstChild?.props?.node?.tagName === 'p') {
+                                        const pText = firstChild.props.children?.[0];
+                                        if (typeof pText === 'string') {
+                                            const match = pText.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/);
+                                            if (match) {
+                                                const type = match[1];
+                                                // Eliminate the trigger text from the first paragraph
+                                                const cleanChildren = React.Children.map(content, (child, index) => {
+                                                    if (index === 0 && React.isValidElement(child)) {
+                                                        const grandChildren = React.Children.toArray((child as any).props.children);
+                                                        // Remove the first text node if it matches or replace it
+                                                        if (typeof grandChildren[0] === 'string' && grandChildren[0].startsWith(match[0])) {
+                                                            const newText = grandChildren[0].replace(match[0], '').trim();
+                                                            // Update the paragraph's children. If text empty, maybe remove? 
+                                                            // For simplicity, just return rest.
+                                                            if (!newText && grandChildren.length === 1) return null; // empty P
 
-                                                        // Reconstruct P without the tag
-                                                        return React.cloneElement(child as React.ReactElement<any>, {}, [newText, ...grandChildren.slice(1)]);
+                                                            // Reconstruct P without the tag
+                                                            return React.cloneElement(child as React.ReactElement<any>, {}, [newText, ...grandChildren.slice(1)]);
+                                                        }
                                                     }
-                                                }
-                                                return child;
-                                            });
+                                                    return child;
+                                                });
 
-                                            // Filter nulls
-                                            const finalChildren = (cleanChildren || []).filter(Boolean);
+                                                // Filter nulls
+                                                const finalChildren = (cleanChildren || []).filter(Boolean);
 
-                                            return <AlertBlock type={type}>{finalChildren}</AlertBlock>;
+                                                return <AlertBlock type={type}>{finalChildren}</AlertBlock>;
+                                            }
                                         }
                                     }
+                                    return <blockquote {...props} className="border-l-4 border-gray-300 pl-4 py-1 my-4 italic bg-gray-50">{children}</blockquote>;
                                 }
-                                return <blockquote {...props} className="border-l-4 border-gray-300 pl-4 py-1 my-4 italic bg-gray-50">{children}</blockquote>;
-                            }
-                        }}
-                    >
-                        {tutorial.content || ''}
-                    </ReactMarkdown>
-                </div>
+                            }}
+                        >
+                            {tutorial.content || ''}
+                        </ReactMarkdown>
+                    </div>
+                )}
             </article>
         </div>
     );

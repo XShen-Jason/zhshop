@@ -9,6 +9,10 @@ import { Product, Tutorial, GroupBuy, Lottery } from '@/types';
 
 interface SiteConfig {
     telegram_link?: string;
+    home_banner_title?: string;
+    home_banner_desc?: string;
+    home_banner_btn_text?: string;
+    home_banner_btn_link?: string;
 }
 
 export default function HomePage() {
@@ -119,13 +123,30 @@ export default function HomePage() {
             <section className="relative overflow-hidden rounded-xl md:rounded-2xl border border-gray-200 bg-gradient-to-br from-white via-indigo-50/50 to-purple-50/50">
                 <div className="p-5 md:p-10 flex flex-col md:flex-row justify-between items-center">
                     <div className="max-w-xl">
-                        <h1 className="text-xl md:text-4xl font-extrabold mb-2 md:mb-3 text-gray-900">
-                            探索数字资产的<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">无限可能</span>
-                        </h1>
-                        <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-5">一站式数字商品交易平台，提供优质教程、拼车合租与积分抽奖服务。</p>
+                        {/* Dynamic Title */}
+                        {siteConfig.home_banner_title ? (
+                            <h1 className="text-xl md:text-4xl font-extrabold mb-2 md:mb-3 text-gray-900">
+                                {siteConfig.home_banner_title}
+                            </h1>
+                        ) : (
+                            <h1 className="text-xl md:text-4xl font-extrabold mb-2 md:mb-3 text-gray-900">
+                                探索数字资产的<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">无限可能</span>
+                            </h1>
+                        )}
+
+                        <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-5">
+                            {siteConfig.home_banner_desc || '一站式数字商品交易平台，提供优质教程、拼车合租与积分抽奖服务。'}
+                        </p>
+
                         <div className="flex flex-wrap gap-2 md:gap-3">
-                            <Link href="/products" className="bg-indigo-600 text-white px-4 md:px-6 py-2 md:py-2.5 rounded-full text-sm md:text-base font-bold shadow hover:bg-indigo-700 transition flex items-center">
-                                浏览商店 <ShoppingBag size={14} className="ml-1.5 md:ml-2 md:w-4 md:h-4" />
+                            <Link
+                                href={siteConfig.home_banner_btn_link || "/products"}
+                                className="bg-indigo-600 text-white px-4 md:px-6 py-2 md:py-2.5 rounded-full text-sm md:text-base font-bold shadow hover:bg-indigo-700 transition flex items-center"
+                            >
+                                {siteConfig.home_banner_btn_text || '浏览商店'}
+                                <span className="ml-1.5 md:ml-2 md:w-4 md:h-4 flex items-center justify-center">
+                                    {siteConfig.home_banner_btn_link ? <ArrowRight size={14} /> : <ShoppingBag size={14} />}
+                                </span>
                             </Link>
                             {siteConfig.telegram_link && (
                                 <a href={siteConfig.telegram_link} target="_blank" rel="noreferrer" className="bg-white border border-gray-200 text-gray-700 px-4 md:px-6 py-2 md:py-2.5 rounded-full text-sm md:text-base font-bold hover:bg-gray-50 transition flex items-center">

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Plus, Edit, Trash2, Users, Lock, Unlock, Flame, Repeat,
     Eye, AlertCircle, ChevronDown, ChevronRight, ChevronUp, Save, X,
-    Phone, Mail, Check, Calendar, User as UserIcon, Clock
+    Phone, Mail, Check, Calendar, User as UserIcon, Clock, ArrowRightLeft
 } from 'lucide-react';
 import { useToast } from '@/lib/GlobalToast';
 import { useConfirm } from '@/lib/ConfirmContext';
@@ -326,6 +326,39 @@ export default function AdminGroupsPage() {
         const [isEditingQty, setIsEditingQty] = useState(false);
         const [qty, setQty] = useState(p.quantity);
         const [showContacts, setShowContacts] = useState(false);
+        const [isMoving, setIsMoving] = useState(false);
+        const [targetGroupId, setTargetGroupId] = useState('');
+
+        const handleMove = async () => {
+            if (!targetGroupId || !currentGroupId) return;
+            const confirmed = await confirm({
+                title: '确认移动',
+                message: '确定要将该成员移动到目标拼团吗？',
+                confirmText: '移动',
+                cancelText: '取消'
+            });
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch('/api/groups/move-member', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ groupId: currentGroupId, userId: p.userId, targetGroupId })
+                });
+
+                if (res.ok) {
+                    showToast('成员已移动', 'success');
+                    openParticipants(currentGroupId);
+                    fetchGroups();
+                } else {
+                    const data = await res.json();
+                    showToast(data.error || '移动失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('移动出错', 'error');
+            }
+        };
 
         const handleQtySave = async () => {
             if (qty !== p.quantity) {
@@ -500,6 +533,46 @@ export default function AdminGroupsPage() {
                                 <span className="text-xs font-bold whitespace-nowrap">{p.isContacted ? '已联系' : '标为已联系'}</span>
                             </label>
                         </div>
+
+                        {/* Move Action */}
+                        {!isMoving ? (
+                            <button
+                                onClick={() => setIsMoving(true)}
+                                className="text-gray-300 hover:text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+                                title="移动至其他拼团"
+                            >
+                                <ArrowRightLeft size={16} />
+                            </button>
+                        ) : (
+                            <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200">
+                                <select
+                                    className="w-32 text-xs border rounded px-1 py-1 outline-none focus:border-indigo-500"
+                                    value={targetGroupId}
+                                    onChange={e => setTargetGroupId(e.target.value)}
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <option value="">选择目标...</option>
+                                    {groups.filter(g => g.status === '进行中' && g.id !== currentGroupId).map(g => (
+                                        <option key={g.id} value={g.id}>
+                                            {g.title.slice(0, 10)}{g.title.length > 10 ? '...' : ''} ({g.currentCount}/{g.targetCount})
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    onClick={handleMove}
+                                    disabled={!targetGroupId}
+                                    className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                    <Check size={12} />
+                                </button>
+                                <button
+                                    onClick={() => { setIsMoving(false); setTargetGroupId(''); }}
+                                    className="p-1 bg-gray-200 text-gray-600 rounded hover:bg-gray-300"
+                                >
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        )}
 
                         {/* Remove Action */}
                         <button

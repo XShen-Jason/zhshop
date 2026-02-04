@@ -11,6 +11,9 @@ import {
     Gift,
     FileText,
     Bell,
+    Settings,
+    BookOpen,
+    MessageSquare,
     LogOut
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -18,13 +21,14 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/lib/GlobalToast';
 
 const navItems = [
-    { href: '/admin', label: '总览', icon: LayoutDashboard, exact: true },
-    { href: '/admin/orders', label: '订单', icon: ShoppingCart },
-    { href: '/admin/products', label: '商品', icon: Box },
-    { href: '/admin/groups', label: '拼团', icon: Users },
-    { href: '/admin/lotteries', label: '抽奖', icon: Gift },
-    { href: '/admin/tutorials', label: '教程', icon: FileText },
-    { href: '/admin/messages', label: '消息', icon: Bell },
+    { label: '总览', href: '/admin', icon: LayoutDashboard, exact: true },
+    { label: '订单', href: '/admin/orders', icon: ShoppingCart },
+    { label: '商品', href: '/admin/products', icon: Box },
+    { label: '拼团', href: '/admin/groups', icon: Users },
+    { label: '抽奖', href: '/admin/lotteries', icon: Gift },
+    { label: '教程', href: '/admin/tutorials', icon: BookOpen },
+    { label: '站内信', href: '/admin/messages', icon: MessageSquare },
+    { label: '设置', href: '/admin/settings', icon: Settings },
 ];
 
 export function AdminSideNav() {
