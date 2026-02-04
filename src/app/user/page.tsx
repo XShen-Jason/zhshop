@@ -11,6 +11,8 @@ import { ContactEditModal } from '@/components/ContactEditModal';
 import { ModifyOrderModal } from '@/components/ModifyOrderModal';
 import { ProfileSettings } from '@/components/ProfileSettings';
 import { FirstTimeContactModal } from '@/components/FirstTimeContactModal';
+import { InvalidContactFixModal } from '@/components/InvalidContactFixModal';
+import { validateContact } from '@/lib/contactValidation';
 import { createClient } from '@/lib/supabase/client';
 import { Order } from '@/types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -71,6 +73,7 @@ export default function UserPage() {
     const [activeTab, setActiveTab] = useState<'orders' | 'lotteries' | 'groups' | 'contacts'>('orders');
     const [actionLoading, setActionLoading] = useState(false);
     const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
+    const [showFixModal, setShowFixModal] = useState(false);
     const [editingGroup, setEditingGroup] = useState<GroupEntry | null>(null);
     const [editingContact, setEditingContact] = useState<{
         type: 'order' | 'lottery' | 'group';
@@ -150,6 +153,15 @@ export default function UserPage() {
     // Check for missing contacts (First Time Reminder)
     useEffect(() => {
         if (!loading && profile) {
+            // Check for invalid contacts first
+            if (profile.savedContacts) {
+                const hasInvalid = profile.savedContacts.some(c => !validateContact(c.type as any, c.value).isValid);
+                if (hasInvalid) {
+                    setShowFixModal(true);
+                    return; // Don't show first time modal if fix modal is showing
+                }
+            }
+
             const hasOtherContacts = profile.savedContacts?.some(c => c.type !== 'Email');
             const hasPrompted = localStorage.getItem('zhshop_contact_prompted');
 
@@ -761,6 +773,16 @@ export default function UserPage() {
                 onSuccess={() => {
                     fetchData(); // Refresh data
                     setShowFirstTimeModal(false);
+                }}
+            />
+
+            {/* Invalid Contact Fix Modal */}
+            <InvalidContactFixModal
+                isOpen={showFixModal}
+                allContacts={profile?.savedContacts || []}
+                onSuccess={() => {
+                    fetchData();
+                    setShowFixModal(false);
                 }}
             />
 

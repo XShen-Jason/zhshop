@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Save, User, Mail, MessageCircle, Phone, Send, CheckCircle, Plus, Trash2, Lock } from 'lucide-react';
+import { Save, User, Mail, MessageCircle, Phone, Send, CheckCircle, Plus, Trash2, Lock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/lib/GlobalToast';
 import ChangePasswordModal from './ChangePasswordModal';
+import { validateContact, ContactType } from '@/lib/contactValidation';
 
 interface Contact {
     type: string;
@@ -33,6 +34,9 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
     // Custom contacts
     const [customContacts, setCustomContacts] = useState<{ label: string; value: string }[]>([]);
 
+    // Field errors state
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
     // Initialize from props
     useEffect(() => {
         const getVal = (type: string) => initialContacts.find(c => c.type === type)?.value || '';
@@ -57,16 +61,32 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
         e.preventDefault();
         setLoading(true);
         setSuccess(false);
+        setFieldErrors({});
 
         // Construct array for backend
+        // Helper to validate and collect errors
         const newContacts: Contact[] = [];
-        if (qq.trim()) newContacts.push({ type: 'QQ', value: qq.trim(), label: 'QQ' });
-        if (wechat.trim()) newContacts.push({ type: 'WeChat', value: wechat.trim(), label: '微信' });
-        if (telegram.trim()) newContacts.push({ type: 'Telegram', value: telegram.trim(), label: 'Telegram' });
-        if (phone.trim()) newContacts.push({ type: 'Phone', value: phone.trim(), label: '手机号' });
-        if (email.trim()) newContacts.push({ type: 'Email', value: email.trim(), label: '邮箱' });
+        const newFieldErrors: Record<string, string> = {};
+        let hasError = false;
 
-        // Add custom contacts
+        const addIfValid = (type: ContactType, value: string, label: string) => {
+            if (!value.trim()) return;
+            const res = validateContact(type, value.trim());
+            if (!res.isValid) {
+                newFieldErrors[type] = res.message || '格式错误';
+                hasError = true;
+            } else {
+                newContacts.push({ type: type as string, value: value.trim(), label });
+            }
+        };
+
+        addIfValid('QQ', qq, 'QQ');
+        addIfValid('WeChat', wechat, '微信');
+        addIfValid('Telegram', telegram, 'Telegram');
+        addIfValid('Phone', phone, '手机号');
+        addIfValid('Email', email, '邮箱');
+
+        // Add custom contacts (Skip validation as per requirement)
         customContacts.forEach(c => {
             if (c.value.trim()) {
                 newContacts.push({
@@ -76,6 +96,12 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
                 });
             }
         });
+
+        if (hasError) {
+            setFieldErrors(newFieldErrors);
+            setLoading(false);
+            return;
+        }
 
         try {
             const res = await fetch('/api/user/contacts', {
@@ -131,10 +157,14 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
                         <input
                             type="text"
                             value={wechat}
-                            onChange={e => setWechat(e.target.value)}
+                            onChange={e => {
+                                setWechat(e.target.value);
+                                if (fieldErrors['WeChat']) setFieldErrors({ ...fieldErrors, WeChat: '' });
+                            }}
                             placeholder="请输入微信号"
-                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-green-500 focus:bg-white transition outline-none text-sm"
+                            className={`w-full px-3 md:px-4 py-2.5 md:py-3 border rounded-lg md:rounded-xl focus:ring-2 bg-gray-50 transition outline-none text-sm ${fieldErrors['WeChat'] ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-gray-200 focus:ring-green-500 focus:bg-white'}`}
                         />
+                        {fieldErrors['WeChat'] && <p className="text-xs text-red-500 mt-1 ml-1">{fieldErrors['WeChat']}</p>}
                     </div>
 
                     {/* Phone */}
@@ -145,10 +175,14 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
                         <input
                             type="tel"
                             value={phone}
-                            onChange={e => setPhone(e.target.value)}
+                            onChange={e => {
+                                setPhone(e.target.value);
+                                if (fieldErrors['Phone']) setFieldErrors({ ...fieldErrors, Phone: '' });
+                            }}
                             placeholder="请输入手机号码"
-                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition outline-none text-sm"
+                            className={`w-full px-3 md:px-4 py-2.5 md:py-3 border rounded-lg md:rounded-xl focus:ring-2 bg-gray-50 transition outline-none text-sm ${fieldErrors['Phone'] ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-gray-200 focus:ring-indigo-500 focus:bg-white'}`}
                         />
+                        {fieldErrors['Phone'] && <p className="text-xs text-red-500 mt-1 ml-1">{fieldErrors['Phone']}</p>}
                     </div>
 
                     {/* QQ */}
@@ -159,10 +193,14 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
                         <input
                             type="text"
                             value={qq}
-                            onChange={e => setQq(e.target.value)}
+                            onChange={e => {
+                                setQq(e.target.value);
+                                if (fieldErrors['QQ']) setFieldErrors({ ...fieldErrors, QQ: '' });
+                            }}
                             placeholder="请输入QQ号"
-                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition outline-none text-sm"
+                            className={`w-full px-3 md:px-4 py-2.5 md:py-3 border rounded-lg md:rounded-xl focus:ring-2 bg-gray-50 transition outline-none text-sm ${fieldErrors['QQ'] ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-gray-200 focus:ring-blue-500 focus:bg-white'}`}
                         />
+                        {fieldErrors['QQ'] && <p className="text-xs text-red-500 mt-1 ml-1">{fieldErrors['QQ']}</p>}
                     </div>
 
                     {/* Telegram */}
@@ -175,11 +213,15 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
                             <input
                                 type="text"
                                 value={telegram.replace(/^@/, '')}
-                                onChange={e => setTelegram(e.target.value)}
+                                onChange={e => {
+                                    setTelegram(e.target.value);
+                                    if (fieldErrors['Telegram']) setFieldErrors({ ...fieldErrors, Telegram: '' });
+                                }}
                                 placeholder="username"
-                                className="w-full pl-8 md:pl-10 pr-3 md:pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-sky-500 focus:bg-white transition outline-none text-sm"
+                                className={`w-full pl-8 md:pl-10 pr-3 md:pr-4 py-2.5 md:py-3 border rounded-lg md:rounded-xl focus:ring-2 bg-gray-50 transition outline-none text-sm ${fieldErrors['Telegram'] ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-gray-200 focus:ring-sky-500 focus:bg-white'}`}
                             />
                         </div>
+                        {fieldErrors['Telegram'] && <p className="text-xs text-red-500 mt-1 ml-1">{fieldErrors['Telegram']}</p>}
                     </div>
 
                     {/* Email */}
@@ -190,10 +232,14 @@ export function ProfileSettings({ initialContacts, userEmail, onUpdate }: Profil
                         <input
                             type="email"
                             value={email}
-                            onChange={e => setEmail(e.target.value)}
+                            onChange={e => {
+                                setEmail(e.target.value);
+                                if (fieldErrors['Email']) setFieldErrors({ ...fieldErrors, Email: '' });
+                            }}
                             placeholder="example@email.com"
-                            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white transition outline-none text-sm"
+                            className={`w-full px-3 md:px-4 py-2.5 md:py-3 border rounded-lg md:rounded-xl focus:ring-2 bg-gray-50 transition outline-none text-sm ${fieldErrors['Email'] ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-gray-200 focus:ring-amber-500 focus:bg-white'}`}
                         />
+                        {fieldErrors['Email'] && <p className="text-xs text-red-500 mt-1 ml-1">{fieldErrors['Email']}</p>}
                         <p className="text-[10px] md:text-xs text-gray-400 mt-1 ml-1">默认为注册邮箱，可修改</p>
                     </div>
 

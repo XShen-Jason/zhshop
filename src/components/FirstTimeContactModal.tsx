@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { X, CheckCircle, MessageCircle, Phone, Save } from 'lucide-react';
 import { useToast } from '@/lib/GlobalToast';
 
+import { validateContact } from '@/lib/contactValidation';
+
 interface Contact {
     type: string;
     value: string;
@@ -22,13 +24,40 @@ export function FirstTimeContactModal({ isOpen, onClose, existingContacts, onSuc
     const [wechat, setWechat] = useState('');
     const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const { showToast } = useToast();
 
     if (!isOpen) return null;
 
     const handleSave = async () => {
+        setFieldErrors({});
+
         if (!wechat && !phone) {
             showToast('请至少填写一项联系方式', 'error');
+            return;
+        }
+
+        let hasError = false;
+        const newFieldErrors: Record<string, string> = {};
+
+        if (wechat) {
+            const res = validateContact('WeChat', wechat);
+            if (!res.isValid) {
+                newFieldErrors['WeChat'] = res.message || '格式错误';
+                hasError = true;
+            }
+        }
+
+        if (phone) {
+            const res = validateContact('Phone', phone);
+            if (!res.isValid) {
+                newFieldErrors['Phone'] = res.message || '格式错误';
+                hasError = true;
+            }
+        }
+
+        if (hasError) {
+            setFieldErrors(newFieldErrors);
             return;
         }
 
@@ -37,8 +66,7 @@ export function FirstTimeContactModal({ isOpen, onClose, existingContacts, onSuc
             // Merge new contacts with existing
             const newContacts = [...existingContacts];
 
-            // Remove old Wechat/Phone if exists to replace them, or update?
-            // Simple approach: filter out old Wechat/Phone if user provided new ones
+            // Remove old Wechat/Phone if exists to replace them
             const filteredContacts = newContacts.filter(c => {
                 if (wechat && c.type === 'WeChat') return false;
                 if (phone && c.type === 'Phone') return false;
@@ -84,10 +112,14 @@ export function FirstTimeContactModal({ isOpen, onClose, existingContacts, onSuc
                         <input
                             type="text"
                             value={wechat}
-                            onChange={(e) => setWechat(e.target.value)}
+                            onChange={(e) => {
+                                setWechat(e.target.value);
+                                if (fieldErrors['WeChat']) setFieldErrors({ ...fieldErrors, WeChat: '' });
+                            }}
                             placeholder="填写微信号"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition"
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 outline-none transition ${fieldErrors['WeChat'] ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'bg-gray-50 border-gray-200 focus:ring-green-500'}`}
                         />
+                        {fieldErrors['WeChat'] && <p className="text-xs text-red-500 mt-1 ml-1">{fieldErrors['WeChat']}</p>}
                     </div>
 
                     <div>
@@ -97,10 +129,14 @@ export function FirstTimeContactModal({ isOpen, onClose, existingContacts, onSuc
                         <input
                             type="tel"
                             value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
+                            onChange={(e) => {
+                                setPhone(e.target.value);
+                                if (fieldErrors['Phone']) setFieldErrors({ ...fieldErrors, Phone: '' });
+                            }}
                             placeholder="填写手机号码"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 outline-none transition ${fieldErrors['Phone'] ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'bg-gray-50 border-gray-200 focus:ring-indigo-500'}`}
                         />
+                        {fieldErrors['Phone'] && <p className="text-xs text-red-500 mt-1 ml-1">{fieldErrors['Phone']}</p>}
                     </div>
 
                     <div className="pt-4 flex gap-3">
