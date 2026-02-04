@@ -26,7 +26,7 @@ const navItems = [
     { label: '商品', href: '/admin/products', icon: Box },
     { label: '拼团', href: '/admin/groups', icon: Users },
     { label: '抽奖', href: '/admin/lotteries', icon: Gift },
-    { label: '教程', href: '/admin/tutorials', icon: BookOpen },
+    { label: '内容', href: '/admin/contents', icon: BookOpen },
     { label: '站内信', href: '/admin/messages', icon: MessageSquare },
     { label: '设置', href: '/admin/settings', icon: Settings },
 ];

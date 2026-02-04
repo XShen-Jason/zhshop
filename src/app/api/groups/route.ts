@@ -163,6 +163,11 @@ export async function PUT(request: Request) {
         if (updates.autoRenew !== undefined) updateData.auto_renew = updates.autoRenew;
         if (updates.isHot !== undefined) updateData.is_hot = updates.isHot;
 
+        // [NEW] Set ended_at if status becomes '已结束'
+        if (updates.status === '已结束') {
+            updateData.ended_at = new Date().toISOString();
+        }
+
         const { error } = await supabase
             .from('group_buys')
             .update(updateData)

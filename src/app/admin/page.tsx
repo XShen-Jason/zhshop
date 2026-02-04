@@ -42,44 +42,43 @@ export default function AdminOverviewPage() {
 
     const fetchData = async () => {
         setLoading(true);
-        try {
-            const [ordersRes, productsRes, groupsRes, lotteriesRes, statsRes, configRes] = await Promise.all([
-                fetch('/api/orders'),
-                fetch('/api/products'),
-                fetch('/api/groups'),
-                fetch('/api/lottery'),
-                fetch('/api/admin/stats'),
-                fetch('/api/site-config')
-            ]);
 
-            if (ordersRes.ok) {
-                const orders = await ordersRes.json();
+        // Helper to fetch and update state independently
+        const fetchResource = async (url: string, onSuccess: (data: any) => void) => {
+            try {
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    onSuccess(data);
+                }
+            } catch (error) {
+                console.error(`Failed to fetch ${url}`, error);
+            }
+        };
+
+        const promises = [
+            fetchResource('/api/orders', (orders) => {
                 setStats(prev => ({ ...prev, pendingOrders: orders.filter((o: { status: string }) => o.status === '待联系').length }));
-            }
-            if (productsRes.ok) {
-                const products = await productsRes.json();
+            }),
+            fetchResource('/api/products', (products) => {
                 setStats(prev => ({ ...prev, totalProducts: products.length }));
-            }
-            if (groupsRes.ok) {
-                // const groups = await groupsRes.json();
-                // setStats(prev => ({ ...prev, activeGroups: groups.filter((g: { status: string }) => g.status === '进行中').length }));
-            }
-            if (lotteriesRes.ok) {
-                const lotteries = await lotteriesRes.json();
+            }),
+            // fetchResource('/api/groups', (groups) => {
+            //     setStats(prev => ({ ...prev, activeGroups: groups.filter((g: { status: string }) => g.status === '进行中').length }));
+            // }),
+            fetchResource('/api/lottery', (lotteries) => {
                 setStats(prev => ({ ...prev, pendingLotteries: lotteries.filter((l: { status: string }) => l.status === '待开奖').length }));
-            }
-            if (statsRes.ok) {
-                setTransactionStats(await statsRes.json());
-            }
-            if (configRes.ok) {
-                const config = await configRes.json();
+            }),
+            fetchResource('/api/admin/stats', (data) => {
+                setTransactionStats(prev => ({ ...prev, ...data })); // Merge to be safe
+            }),
+            fetchResource('/api/site-config', (config) => {
                 setSiteConfig(config);
-            }
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false);
-        }
+            })
+        ];
+
+        await Promise.allSettled(promises);
+        setLoading(false);
     };
 
     const handleSaveConfig = async () => {

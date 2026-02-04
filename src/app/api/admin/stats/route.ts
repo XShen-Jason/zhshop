@@ -5,12 +5,12 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/admin/stats
- * Returns transaction statistics for admin dashboard:
- * - Today's revenue (completed orders + groups)
+ * Returns transaction statistics for admin dashboard (all in Beijing Time):
+ * - Today's revenue (completed orders + ended groups)
  * - Yesterday's revenue
  * - Monthly total revenue
  * - Monthly order count
- * - Group Buy metrics: active count, ended count, total ended sales
+ * - Group Buy metrics: active count, locked count, ended count, total ended sales
  */
 export async function GET() {
     try {
@@ -27,102 +27,123 @@ export async function GET() {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Calculate date boundaries (Beijing timezone)
+        // ========================================
+        // Beijing Time Boundaries (UTC+8)
+        // ========================================
+        // Get current time in Beijing
         const now = new Date();
-        const beijingOffset = 8 * 60 * 60 * 1000;
-        const nowBeijing = new Date(now.getTime() + beijingOffset);
+        const beijingNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
 
-        // Today start (00:00 Beijing time)
-        const todayStart = new Date(nowBeijing);
-        todayStart.setUTCHours(0, 0, 0, 0);
-        const todayStartUtc = new Date(todayStart.getTime() - beijingOffset);
+        // Today 00:00:00 Beijing Time
+        const todayBeijing = new Date(beijingNow);
+        todayBeijing.setHours(0, 0, 0, 0);
 
-        // Yesterday start
-        const yesterdayStart = new Date(todayStartUtc.getTime() - 24 * 60 * 60 * 1000);
+        // Yesterday 00:00:00 Beijing Time
+        const yesterdayBeijing = new Date(todayBeijing);
+        yesterdayBeijing.setDate(yesterdayBeijing.getDate() - 1);
 
-        // Month start (1st of current month 00:00 Beijing time)
-        const monthStart = new Date(nowBeijing);
-        monthStart.setUTCDate(1);
-        monthStart.setUTCHours(0, 0, 0, 0);
-        const monthStartUtc = new Date(monthStart.getTime() - beijingOffset);
+        // First day of current month 00:00:00 Beijing Time
+        const monthStartBeijing = new Date(beijingNow);
+        monthStartBeijing.setDate(1);
+        monthStartBeijing.setHours(0, 0, 0, 0);
 
-        // Fetch completed orders
+        // Helper: Convert a UTC timestamp to Beijing Date for comparison
+        const toBeijingDate = (utcStr: string): Date => {
+            const d = new Date(utcStr);
+            return new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+        };
+
+        // Helper: Check if a Beijing date is "today"
+        const isToday = (beijingDate: Date): boolean => {
+            return beijingDate >= todayBeijing;
+        };
+
+        // Helper: Check if a Beijing date is "yesterday"
+        const isYesterday = (beijingDate: Date): boolean => {
+            return beijingDate >= yesterdayBeijing && beijingDate < todayBeijing;
+        };
+
+        // Helper: Check if a Beijing date is "this month"
+        const isThisMonth = (beijingDate: Date): boolean => {
+            return beijingDate >= monthStartBeijing;
+        };
+
+        // ========================================
+        // Fetch Data
+        // ========================================
+        // Fetch completed orders only
         const { data: orders } = await supabase
             .from('orders')
             .select('cost, quantity, updated_at')
             .eq('status', '已完成');
 
-        // Fetch group buys
+        // Fetch all group buys
         const { data: groups } = await supabase
             .from('group_buys')
-            .select('id, price, updated_at, status');
+            .select('id, price, updated_at, status, ended_at');
 
-        // Fetch counts for active/ended groups
+        // Group counts
         const activeGroupsCount = (groups || []).filter(g => g.status === '进行中').length;
         const lockedGroupsCount = (groups || []).filter(g => g.status === '已锁单').length;
         const endedGroupsCount = (groups || []).filter(g => g.status === '已结束').length;
 
-        // Filter groups for revenue calcs (Only Ended groups count towards revenue)
-        const revenueGroups = (groups || []).filter(g => g.status === '已结束');
+        // Filter ended groups for revenue calculation
+        const endedGroups = (groups || []).filter(g => g.status === '已结束');
 
-        // For each completed group, get participant quantities
-        const groupRevenues: { groupId: string; revenue: number; updatedAt: string; status: string }[] = [];
-        if (revenueGroups.length > 0) {
+        // Get participant quantities for ended groups
+        const groupRevenues: { revenue: number; endedAt: string }[] = [];
+        if (endedGroups.length > 0) {
             const { data: participants } = await supabase
                 .from('group_participants')
                 .select('group_id, quantity')
-                .in('group_id', revenueGroups.map(g => g.id));
+                .in('group_id', endedGroups.map(g => g.id));
 
-            for (const group of revenueGroups) {
+            for (const group of endedGroups) {
                 const groupParticipants = (participants || []).filter(p => p.group_id === group.id);
                 const totalQuantity = groupParticipants.reduce((sum, p) => sum + (p.quantity || 1), 0);
-                groupRevenues.push({
-                    groupId: group.id,
-                    revenue: (group.price || 0) * totalQuantity,
-                    updatedAt: group.updated_at,
-                    status: group.status
-                });
+                const revenue = (group.price || 0) * totalQuantity;
+                // Use ended_at if exists, otherwise fallback to updated_at
+                const endedAt = group.ended_at || group.updated_at;
+                groupRevenues.push({ revenue, endedAt });
             }
         }
 
-        // Calculate stats
+        // ========================================
+        // Calculate Stats
+        // ========================================
         let todayRevenue = 0;
         let yesterdayRevenue = 0;
         let monthlyRevenue = 0;
         let monthlyOrderCount = 0;
         let totalEndedGroupSales = 0;
 
-        // Process orders (calculate total from cost * quantity)
+        // Process completed orders
         for (const order of orders || []) {
             const orderTotal = (order.cost || 0) * (order.quantity || 1);
-            const orderDate = new Date(order.updated_at);
+            const orderBeijingDate = toBeijingDate(order.updated_at);
 
-            if (orderDate >= monthStartUtc) {
+            if (isThisMonth(orderBeijingDate)) {
                 monthlyRevenue += orderTotal;
                 monthlyOrderCount++;
             }
-            if (orderDate >= todayStartUtc) {
+            if (isToday(orderBeijingDate)) {
                 todayRevenue += orderTotal;
-            } else if (orderDate >= yesterdayStart && orderDate < todayStartUtc) {
+            } else if (isYesterday(orderBeijingDate)) {
                 yesterdayRevenue += orderTotal;
             }
         }
 
-        // Process group revenues
+        // Process ended group revenues
         for (const gr of groupRevenues) {
-            const groupDate = new Date(gr.updatedAt);
+            totalEndedGroupSales += gr.revenue;
+            const groupBeijingDate = toBeijingDate(gr.endedAt);
 
-            if (gr.status === '已结束') {
-                totalEndedGroupSales += gr.revenue;
-            }
-
-            if (groupDate >= monthStartUtc) {
+            if (isThisMonth(groupBeijingDate)) {
                 monthlyRevenue += gr.revenue;
-                monthlyOrderCount++; // Count each group as one "order" for simplicity
             }
-            if (groupDate >= todayStartUtc) {
+            if (isToday(groupBeijingDate)) {
                 todayRevenue += gr.revenue;
-            } else if (groupDate >= yesterdayStart && groupDate < todayStartUtc) {
+            } else if (isYesterday(groupBeijingDate)) {
                 yesterdayRevenue += gr.revenue;
             }
         }
