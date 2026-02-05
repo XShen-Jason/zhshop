@@ -15,7 +15,9 @@ export async function createClient() {
                 setAll(cookiesToSet) {
                     try {
                         cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
+                            // Force 'secure: false' to allow cookies on HTTP IP addresses (e.g. 43.138.188.94)
+                            // Supabase defaults to secure: true which browsers block on non-localhost HTTP.
+                            cookieStore.set(name, value, { ...options, secure: false })
                         );
                     } catch {
                         // The `setAll` method was called from a Server Component.

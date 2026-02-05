@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { type EmailOtpType } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     const code = searchParams.get('code');
-    const type = searchParams.get('type');
+    const token_hash = searchParams.get('token_hash');
+    const type = searchParams.get('type') as EmailOtpType | null;
     let next = searchParams.get('next') ?? '/';
 
     // Handle password recovery flow explicitly
@@ -12,24 +14,50 @@ export async function GET(request: Request) {
         next = '/auth/reset-password';
     }
 
-    if (code) {
-        const supabase = await createClient();
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error) {
-            // 如果是密码重置流程，重定向到重置密码页面
-            const forwardedHost = request.headers.get('x-forwarded-host');
-            const isLocalEnv = process.env.NODE_ENV === 'development';
+    const supabase = await createClient();
 
-            if (isLocalEnv) {
-                return NextResponse.redirect(`${origin}${next}`);
-            } else if (forwardedHost) {
-                return NextResponse.redirect(`https://${forwardedHost}${next}`);
-            } else {
-                return NextResponse.redirect(`${origin}${next}`);
-            }
+    // Method 1: PKCE code exchange (same-browser flow)
+    if (code) {
+        console.log('[AuthCallback] Exchanging code:', code);
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (!error) {
+            console.log('[AuthCallback] Code exchange success, redirecting to:', next);
+            return redirectToNext(request, origin, next);
+        } else {
+            console.error('[AuthCallback] Code exchange error:', error);
         }
     }
 
-    // 出错时重定向到登录页面并显示错误
+    // Method 2: Token hash verification (cross-browser flow)
+    if (token_hash && type) {
+        console.log('[AuthCallback] Verifying token_hash, type:', type);
+        const { error } = await supabase.auth.verifyOtp({
+            token_hash,
+            type,
+        });
+
+        if (!error) {
+            console.log('[AuthCallback] Token hash verification success');
+            return redirectToNext(request, origin, next);
+        } else {
+            console.error('[AuthCallback] Token hash verification error:', error);
+        }
+    }
+
+    // Error: redirect to login with error message
     return NextResponse.redirect(`${origin}/auth/login?error=验证失败，请重试`);
+}
+
+function redirectToNext(request: Request, origin: string, next: string) {
+    const forwardedHost = request.headers.get('x-forwarded-host');
+    const isLocalEnv = process.env.NODE_ENV === 'development';
+
+    if (isLocalEnv) {
+        return NextResponse.redirect(`${origin}${next}`);
+    } else if (forwardedHost) {
+        return NextResponse.redirect(`https://${forwardedHost}${next}`);
+    } else {
+        return NextResponse.redirect(`${origin}${next}`);
+    }
 }

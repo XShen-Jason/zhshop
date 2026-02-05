@@ -20,7 +20,8 @@ export async function updateSession(request: NextRequest) {
                         request,
                     });
                     cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
+                        // Force 'secure: false' to allow cookies on HTTP IP addresses
+                        supabaseResponse.cookies.set(name, value, { ...options, secure: false })
                     );
                 },
             },
