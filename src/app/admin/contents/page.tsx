@@ -55,7 +55,7 @@ function TagInput({ value, onChange, placeholder = '输入标签后回车...' }:
             onClick={() => inputRef.current?.focus()}
         >
             {value.map((tag, index) => (
-                <span key={index} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                <span key={index} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 whitespace-nowrap">
                     {tag}
                     <button
                         type="button"
@@ -84,7 +84,7 @@ function TagInput({ value, onChange, placeholder = '输入标签后回车...' }:
 function CategoryBadge({ category }: { category: string }) {
     const isActivity = category === '活动';
     return (
-        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${isActivity
+        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${isActivity
             ? 'bg-purple-50 text-purple-700 border-purple-100'
             : 'bg-blue-50 text-blue-700 border-blue-100'
             }`}>
@@ -223,7 +223,7 @@ export default function AdminContentPage() {
                     </div>
                     <button
                         onClick={() => { setEditing({ category: '教程', tags: [], format: 'md' }); setShowModal(true); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-all active:scale-95"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-all active:scale-95 whitespace-nowrap"
                     >
                         <Plus size={18} /> 新增内容
                     </button>
@@ -270,7 +270,7 @@ export default function AdminContentPage() {
                             <div className="absolute top-3 left-3 flex gap-2">
                                 <CategoryBadge category={item.category} />
                                 {item.isHot && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-orange-500 text-white shadow-sm">
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-orange-500 text-white shadow-sm whitespace-nowrap">
                                         <Flame size={10} fill="currentColor" /> 热推
                                     </span>
                                 )}
@@ -292,7 +292,7 @@ export default function AdminContentPage() {
                             <div className="flex flex-wrap gap-1.5 mb-3">
                                 {item.tags && item.tags.filter(t => t !== 'html-mode').length > 0 ? (
                                     item.tags.filter(t => t !== 'html-mode').map((tag, i) => (
-                                        <span key={i} className="px-2 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500 border border-gray-200">
+                                        <span key={i} className="px-2 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500 border border-gray-200 whitespace-nowrap">
                                             {tag}
                                         </span>
                                     ))

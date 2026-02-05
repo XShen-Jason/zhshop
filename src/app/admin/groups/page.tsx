@@ -439,7 +439,7 @@ export default function AdminGroupsPage() {
         );
 
         return (
-            <div className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border transition-all shadow-sm gap-4 ${p.isContacted ? 'bg-green-50/50 border-green-100' : 'bg-white border-gray-100 hover:bg-gray-50'}`}>
+            <div className={`flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 rounded-xl border transition-all shadow-sm gap-3 md:gap-4 ${p.isContacted ? 'bg-green-50/50 border-green-100' : 'bg-white border-gray-100 hover:bg-gray-50'}`}>
                 {/* User Info Section */}
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${p.isContacted ? 'bg-green-100 text-green-600' : 'bg-indigo-100 text-indigo-600'}`}>
@@ -455,7 +455,7 @@ export default function AdminGroupsPage() {
                 </div>
 
                 {/* Contact Info Section - Primary + Dropdown */}
-                <div className="flex-1 flex flex-col justify-center min-w-[250px] relative">
+                <div className="flex-1 flex flex-col justify-center min-w-0 md:min-w-[200px] relative">
                     <div className="space-y-1">
                         {/* Primary Contact */}
                         {primaryContact ? (
@@ -489,7 +489,7 @@ export default function AdminGroupsPage() {
                 </div>
 
                 {/* Actions & Meta Section */}
-                <div className="flex items-center gap-4 justify-between sm:justify-end min-w-[300px]">
+                <div className="flex flex-wrap items-center gap-3 justify-between md:justify-end min-w-0 md:min-w-[300px]">
                     {/* Join Time */}
                     <div className="flex items-center gap-1.5 text-xs text-gray-400 whitespace-nowrap">
                         <Clock size={12} />
@@ -597,20 +597,20 @@ export default function AdminGroupsPage() {
     const endedGroups = groups.filter(g => g.status === '已结束');
 
     const GroupColumn = ({ title, status, items, icon: Icon, colorClass, bgClass, countColor }: any) => (
-        <div className="flex flex-col h-full min-w-[320px] bg-gray-50/50 rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="flex flex-col h-auto lg:h-full w-full lg:min-w-[320px] bg-gray-50/50 rounded-2xl border border-gray-200 overflow-hidden">
             {/* Column Header */}
             <div className={`p-4 border-b border-gray-100 flex justify-between items-center ${bgClass}`}>
                 <div className="flex items-center gap-2">
                     <Icon size={18} className={colorClass} />
                     <h3 className="font-bold text-gray-800">{title}</h3>
                 </div>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full bg-white bg-opacity-60 ${countColor}`}>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full bg-white bg-opacity-60 whitespace-nowrap ${countColor}`}>
                     {items.length}
                 </span>
             </div>
 
             {/* Scrollable List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+            <div className="h-auto lg:flex-1 lg:overflow-y-auto p-3 space-y-3 custom-scrollbar">
                 {items.length === 0 && (
                     <div className="text-center py-10 text-gray-400 text-sm">暂无{title}拼团</div>
                 )}
@@ -621,7 +621,7 @@ export default function AdminGroupsPage() {
                             <div className="flex-1 min-w-0 pr-2">
                                 <h4 className="font-bold text-gray-900 text-sm line-clamp-1" title={g.title}>{g.title}</h4>
                                 <div className="flex items-center gap-1 mt-1">
-                                    {g.autoRenew && <span className="flex items-center gap-0.5 text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100"><Repeat size={10} /> 自动续期</span>}
+                                    {g.autoRenew && <span className="flex items-center gap-0.5 text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 whitespace-nowrap"><Repeat size={10} /> 自动续期</span>}
                                 </div>
                             </div>
                             <div className="text-right">
@@ -652,7 +652,7 @@ export default function AdminGroupsPage() {
                             <div className="flex items-center justify-between gap-2">
                                 <button
                                     onClick={() => toggleHot(g.id, !!g.isHot, null as any)}
-                                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors ${g.isHot ? 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 hover:text-orange-500'}`}
+                                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap ${g.isHot ? 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 hover:text-orange-500'}`}
                                 >
                                     <Flame size={12} className={g.isHot ? 'fill-orange-500' : 'fill-gray-400'} />
                                     {g.isHot ? '热销中' : '设为热销'}
@@ -660,7 +660,7 @@ export default function AdminGroupsPage() {
 
                                 <button
                                     onClick={() => openParticipants(g.id)}
-                                    className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors whitespace-nowrap"
                                 >
                                     <Users size={12} />
                                     成员
@@ -671,7 +671,7 @@ export default function AdminGroupsPage() {
                             {g.status === '进行中' && (
                                 <button
                                     onClick={() => updateStatus(g.id, '已锁单')}
-                                    className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-green-100 bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                                    className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-green-100 bg-green-50 text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap"
                                 >
                                     <Lock size={12} /> 手动锁单
                                 </button>
@@ -681,13 +681,13 @@ export default function AdminGroupsPage() {
                                 <div className="flex justify-between gap-2">
                                     <button
                                         onClick={() => updateStatus(g.id, '进行中')}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap"
                                     >
                                         <Unlock size={12} /> 解锁
                                     </button>
                                     <button
                                         onClick={() => updateStatus(g.id, '已结束')}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors"
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors whitespace-nowrap"
                                     >
                                         <AlertCircle size={12} /> 结束
                                     </button>
@@ -732,7 +732,7 @@ export default function AdminGroupsPage() {
     }
 
     return (
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-auto lg:h-full lg:overflow-hidden">
             {/* Header */}
             <div className="flex-none p-4 pb-2 flex justify-between items-center bg-white border-b border-gray-100 z-10 shadow-sm mb-4 rounded-xl mx-4 mt-4">
                 <div>
@@ -741,15 +741,15 @@ export default function AdminGroupsPage() {
                 </div>
                 <button
                     onClick={() => { setEditingGroup({ status: GroupStatus.ACTIVE, features: [] }); setShowEditModal(true); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 shadow-md shadow-indigo-200"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 shadow-md shadow-indigo-200 whitespace-nowrap"
                 >
                     <Plus size={16} /> 发布拼团
                 </button>
             </div>
 
             {/* Kanban Columns Container - Independent Scrolling */}
-            <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-                <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-6 px-4 pb-4 min-w-[1000px] md:min-w-0">
+            <div className="h-auto lg:flex-1 lg:min-h-0 lg:overflow-x-auto lg:overflow-y-hidden">
+                <div className="h-auto lg:h-full grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 pb-4 w-full lg:min-w-0">
                     <GroupColumn
                         title="进行中"
                         status="进行中"

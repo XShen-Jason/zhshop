@@ -10,11 +10,11 @@ import type { Product } from '@/types';
 // Helper Component for Category Badges
 const CategoryBadge = ({ c, s }: { c: string, s?: string }) => (
     <div className="flex flex-wrap items-center gap-1.5">
-        <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
+        <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 whitespace-nowrap">
             {c}
         </span>
         {s && s !== '未分类' && (
-            <span className="px-2 py-0.5 rounded-md bg-white text-gray-500 text-[10px] border border-gray-100 flex items-center gap-1 shadow-sm">
+            <span className="px-2 py-0.5 rounded-md bg-white text-gray-500 text-[10px] border border-gray-100 flex items-center gap-1 shadow-sm whitespace-nowrap">
                 <span className="text-gray-300">↳</span> {s}
             </span>
         )}
@@ -398,7 +398,7 @@ export default function AdminProductsPage() {
     }
 
     return (
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-auto lg:h-full lg:overflow-hidden">
             {/* Fixed Header */}
             <div className="flex-none space-y-4 pb-4 bg-gray-50 z-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -409,13 +409,13 @@ export default function AdminProductsPage() {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setShowCategoryManager(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-colors whitespace-nowrap"
                         >
                             <Layers size={16} /> 分类管理
                         </button>
                         <button
                             onClick={() => { setEditingProduct({ inStock: true }); setShowEditModal(true); }}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-colors whitespace-nowrap"
                         >
                             <Plus size={16} /> 新增商品
                         </button>
@@ -466,14 +466,14 @@ export default function AdminProductsPage() {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => handleSort('price')}
-                            className={`px-3 py-2 rounded-lg text-sm border flex items-center gap-1 transition-colors ${sortField === 'price' && sortOrder ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'}`}
+                            className={`px-3 py-2 rounded-lg text-sm border flex items-center gap-1 transition-colors whitespace-nowrap ${sortField === 'price' && sortOrder ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'}`}
                         >
                             价格 {sortField === 'price' && sortOrder && <ArrowUpDown size={12} className={sortOrder === 'desc' ? 'rotate-180' : ''} />}
                         </button>
 
                         <button
                             onClick={() => handleSort('stock')}
-                            className={`px-3 py-2 rounded-lg text-sm border flex items-center gap-1 transition-colors ${sortField === 'stock' && sortOrder ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'}`}
+                            className={`px-3 py-2 rounded-lg text-sm border flex items-center gap-1 transition-colors whitespace-nowrap ${sortField === 'stock' && sortOrder ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'}`}
                         >
                             库存 {sortField === 'stock' && sortOrder && <ArrowUpDown size={12} className={sortOrder === 'desc' ? 'rotate-180' : ''} />}
                         </button>
@@ -493,7 +493,7 @@ export default function AdminProductsPage() {
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto pr-1 pb-10">
+            <div className="h-auto lg:flex-1 lg:overflow-y-auto pr-1 pb-10">
                 <div className="flex flex-col gap-3">
                     {filteredAndSortedProducts.map((p) => (
                         <div key={p.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow group flex items-start gap-4">
@@ -514,7 +514,7 @@ export default function AdminProductsPage() {
                                     </div>
                                     <div className="text-right flex flex-col items-end">
                                         <span className="block font-bold text-lg text-gray-900">￥{p.price.toFixed(2)}</span>
-                                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${p.stock > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${p.stock > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
                                             库存: {p.stock > 999 ? '999+' : p.stock}
                                         </span>
                                     </div>
@@ -525,7 +525,7 @@ export default function AdminProductsPage() {
                                     <div className="flex items-center gap-4">
                                         <button
                                             onClick={(e) => toggleStock(p.id, p.inStock !== false, e)}
-                                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border transition-colors ${p.inStock !== false ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+                                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border transition-colors whitespace-nowrap ${p.inStock !== false ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
                                             title={p.inStock !== false ? "点击下架" : "点击上架"}
                                         >
                                             <div className={`w-1.5 h-1.5 rounded-full ${p.inStock !== false ? 'bg-emerald-500' : 'bg-gray-400'}`}></div>
@@ -534,7 +534,7 @@ export default function AdminProductsPage() {
 
                                         <button
                                             onClick={(e) => toggleHot(p.id, !!p.isHot, e)}
-                                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border transition-colors ${p.isHot ? 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200 hover:text-orange-500'}`}
+                                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border transition-colors whitespace-nowrap ${p.isHot ? 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200 hover:text-orange-500'}`}
                                             title={p.isHot ? "取消热销" : "设为热销"}
                                         >
                                             <Flame size={12} className={p.isHot ? 'fill-orange-500' : 'fill-gray-400'} />

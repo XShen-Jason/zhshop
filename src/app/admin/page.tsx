@@ -155,7 +155,7 @@ export default function AdminOverviewPage() {
                     </div>
                     <p className="text-emerald-100 text-sm font-medium mb-1">今日交易额</p>
                     <h3 className="text-3xl font-bold">￥{transactionStats.todayRevenue.toFixed(2)}</h3>
-                    <div className="mt-4 text-xs text-emerald-100 bg-emerald-600/30 inline-block px-2 py-1 rounded">
+                    <div className="mt-4 text-xs text-emerald-100 bg-emerald-600/30 inline-block px-2 py-1 rounded whitespace-nowrap">
                         昨日: ￥{transactionStats.yesterdayRevenue.toFixed(2)}
                     </div>
                 </div>
@@ -171,8 +171,8 @@ export default function AdminOverviewPage() {
                         </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-50 flex items-center text-xs text-gray-500">
-                        <span className="text-indigo-600 font-medium bg-indigo-50 px-1.5 py-0.5 rounded mr-2">OK</span>
-                        本月订单数: {transactionStats.monthlyOrderCount}
+                        <span className="text-indigo-600 font-medium bg-indigo-50 px-1.5 py-0.5 rounded mr-2 whitespace-nowrap">OK</span>
+                        <span className="truncate">本月订单数: {transactionStats.monthlyOrderCount}</span>
                     </div>
                 </div>
 
@@ -201,7 +201,7 @@ export default function AdminOverviewPage() {
                                 <div className="w-px h-8 bg-gray-100"></div>
                                 <div>
                                     <h3 className="text-2xl font-bold text-amber-500">{transactionStats.lockedGroupsCount || 0}</h3>
-                                    <p className="text-xs text-amber-400 font-medium">已锁团</p>
+                                    <p className="text-xs text-amber-400 font-medium whitespace-nowrap">已锁团</p>
                                 </div>
                             </div>
                         </div>
@@ -305,7 +305,7 @@ export default function AdminOverviewPage() {
                                 )}
                             </div>
                             <div className="flex-1">
-                                <label className="cursor-pointer bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 hover:text-indigo-600 inline-flex items-center transition-all shadow-sm">
+                                <label className="cursor-pointer bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 hover:text-indigo-600 inline-flex items-center transition-all shadow-sm whitespace-nowrap">
                                     <Upload size={16} className="mr-2" />
                                     {isUploading ? '上传中...' : '点击上传图片'}
                                     <input
@@ -345,7 +345,7 @@ export default function AdminOverviewPage() {
                     <button
                         onClick={handleSaveConfig}
                         disabled={siteConfigLoading}
-                        className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02]"
+                        className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] whitespace-nowrap"
                     >
                         {siteConfigLoading ? <Loader2 className="animate-spin mr-2" size={18} /> : <Save size={18} className="mr-2" />}
                         保存配置

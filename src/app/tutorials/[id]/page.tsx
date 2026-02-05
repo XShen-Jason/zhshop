@@ -88,7 +88,7 @@ export default function TutorialDetailPage() {
 
             <article className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden p-8 md:p-12">
                 <div className="flex gap-2 mb-6 flex-wrap">
-                    {(tutorial.tags || []).map(tag => (
+                    {(tutorial.tags || []).filter(tag => tag !== 'html-mode').map(tag => (
                         <span key={tag} className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full">{tag}</span>
                     ))}
                 </div>

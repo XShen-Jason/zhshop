@@ -168,7 +168,7 @@ export default function AdminTutorialsPage() {
                 <h2 className="text-lg font-bold">教程管理</h2>
                 <button
                     onClick={() => { setEditing({}); setShowModal(true); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 whitespace-nowrap"
                 >
                     <Plus size={16} /> 新增教程
                 </button>
@@ -283,8 +283,8 @@ export default function AdminTutorialsPage() {
                             </div>
 
                             <div className="flex gap-3 pt-2">
-                                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 border rounded-lg text-gray-600 hover:bg-gray-50">取消</button>
-                                <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">保存</button>
+                                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 border rounded-lg text-gray-600 hover:bg-gray-50 whitespace-nowrap">取消</button>
+                                <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 whitespace-nowrap">保存</button>
                             </div>
                         </form>
                     </div>

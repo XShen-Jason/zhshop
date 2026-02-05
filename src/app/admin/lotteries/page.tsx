@@ -19,7 +19,7 @@ const StatusBadge = ({ status }: { status: string }) => {
         : 'bg-green-50 text-green-700 border-green-100';
 
     return (
-        <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${styles}`}>
+        <span className={`text-xs px-2.5 py-1 rounded-full border font-medium whitespace-nowrap ${styles}`}>
             {status}
         </span>
     );
@@ -105,13 +105,13 @@ const LotteryCard = ({
                 <div className="flex gap-2">
                     <button
                         onClick={() => onViewParticipants(lottery.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors whitespace-nowrap"
                     >
                         <Users size={12} /> 成员
                     </button>
                     <button
                         onClick={() => onToggleHot(lottery.id, !!lottery.isHot)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${lottery.isHot ? 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 hover:text-orange-500'}`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap ${lottery.isHot ? 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 hover:text-orange-500'}`}
                         title={lottery.isHot ? "取消热销" : "设为热销"}
                     >
                         <Flame size={12} className={lottery.isHot ? "fill-orange-500" : "fill-gray-400"} />
@@ -155,7 +155,7 @@ const ParticipantItem = ({ p }: { p: Participant }) => {
     return (
         <div className={`flex flex-col p-4 rounded-xl border transition-all ${p.isWinner ? 'bg-amber-50 border-amber-200 shadow-sm relative overflow-hidden' : 'bg-white border-gray-100 hover:bg-gray-50'}`}>
             {p.isWinner && (
-                <div className="absolute top-0 right-0 bg-amber-400 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">
+                <div className="absolute top-0 right-0 bg-amber-400 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold whitespace-nowrap">
                     中奖者
                 </div>
             )}
@@ -395,27 +395,27 @@ export default function AdminLotteriesPage() {
                 </div>
                 <button
                     onClick={() => { setEditing({ prizes: [], isHot: false }); setShowModal(true); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all whitespace-nowrap"
                 >
                     <Plus size={16} /> 发布抽奖
                 </button>
             </div>
 
             {/* Kanban Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-220px)]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-auto lg:h-[calc(100vh-220px)]">
 
                 {/* Column: Pending */}
-                <div className="flex flex-col bg-gray-50/50 rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex flex-col bg-gray-50/50 rounded-2xl border border-gray-200 overflow-hidden h-auto lg:h-full">
                     <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-amber-50/30">
                         <div className="flex items-center gap-2">
                             <Clock size={18} className="text-amber-600" />
                             <h3 className="font-bold text-gray-800">待开奖（进行中）</h3>
                         </div>
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white text-amber-600 border border-amber-100">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white text-amber-600 border border-amber-100 whitespace-nowrap">
                             {pendingLotteries.length}
                         </span>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                    <div className="h-auto lg:flex-1 lg:overflow-y-auto p-4 space-y-4 custom-scrollbar">
                         {pendingLotteries.length === 0 && <div className="text-center py-10 text-gray-400 text-sm">暂无进行中的活动</div>}
                         {pendingLotteries.map(l => (
                             <LotteryCard
@@ -432,17 +432,17 @@ export default function AdminLotteriesPage() {
                 </div>
 
                 {/* Column: Completed */}
-                <div className="flex flex-col bg-gray-50/50 rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex flex-col bg-gray-50/50 rounded-2xl border border-gray-200 overflow-hidden h-auto lg:h-full">
                     <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-green-50/30">
                         <div className="flex items-center gap-2">
                             <Trophy size={18} className="text-green-600" />
                             <h3 className="font-bold text-gray-800">已开奖 / 结束</h3>
                         </div>
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white text-green-600 border border-green-100">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white text-green-600 border border-green-100 whitespace-nowrap">
                             {completedLotteries.length}
                         </span>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                    <div className="h-auto lg:flex-1 lg:overflow-y-auto p-4 space-y-4 custom-scrollbar">
                         {completedLotteries.length === 0 && <div className="text-center py-10 text-gray-400 text-sm">暂无历史活动</div>}
                         {completedLotteries.map(l => (
                             <LotteryCard

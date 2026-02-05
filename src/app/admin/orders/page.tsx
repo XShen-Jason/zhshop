@@ -306,14 +306,14 @@ export default function AdminOrdersPage() {
                         <>
                             <button
                                 onClick={() => handleAdminAction(order.id, 'delete')}
-                                className="px-2 py-1 text-[10px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                                className="px-2 py-1 text-[10px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors whitespace-nowrap"
                                 title="删除（仅隐藏）"
                             >
                                 删除
                             </button>
                             <button
                                 onClick={() => handleAdminAction(order.id, 'cancel')}
-                                className="px-2 py-1 text-[10px] font-medium text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                                className="px-2 py-1 text-[10px] font-medium text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded transition-colors whitespace-nowrap"
                                 title="取消（恢复库存和积分）"
                             >
                                 取消
@@ -324,7 +324,7 @@ export default function AdminOrdersPage() {
                     {(order.status === '待联系' || order.status === '已联系') && (
                         <button
                             onClick={() => handleAdminAction(order.id, 'cancel')}
-                            className="px-2 py-1 text-[10px] font-medium text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                            className="px-2 py-1 text-[10px] font-medium text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded transition-colors whitespace-nowrap"
                             title="取消订单"
                         >
                             取消
@@ -400,7 +400,7 @@ export default function AdminOrdersPage() {
                     {order.status === '待联系' && (
                         <button
                             onClick={() => updateStatus(order.id, '已联系')}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200 whitespace-nowrap"
                         >
                             联系处理 <ArrowRight size={12} />
                         </button>
@@ -408,13 +408,13 @@ export default function AdminOrdersPage() {
                     {order.status === '已联系' && (
                         <button
                             onClick={() => updateStatus(order.id, '已完成')}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-500 text-white rounded-lg text-xs font-medium hover:bg-emerald-600 transition-all shadow-sm shadow-emerald-200"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-500 text-white rounded-lg text-xs font-medium hover:bg-emerald-600 transition-all shadow-sm shadow-emerald-200 whitespace-nowrap"
                         >
                             标记完成 <CheckCircle size={12} />
                         </button>
                     )}
                     {order.status === '已完成' && (
-                        <div className="w-full py-2 text-center text-xs text-emerald-600 font-medium bg-emerald-50 rounded-lg border border-emerald-100 flex items-center justify-center gap-1">
+                        <div className="w-full py-2 text-center text-xs text-emerald-600 font-medium bg-emerald-50 rounded-lg border border-emerald-100 flex items-center justify-center gap-1 whitespace-nowrap">
                             <CheckCircle size={12} /> 交易成功
                         </div>
                     )}
@@ -461,7 +461,7 @@ export default function AdminOrdersPage() {
                 <div className="flex gap-2">
                     <button
                         onClick={() => { setShowCancelled(!showCancelled); if (!showCancelled) setShowDeleted(false); }}
-                        className={`px-4 py-2 rounded-lg text-xs font-medium border transition-all flex items-center gap-2 ${showCancelled
+                        className={`px-4 py-2 rounded-lg text-xs font-medium border transition-all flex items-center gap-2 whitespace-nowrap ${showCancelled
                             ? 'bg-orange-600 text-white border-orange-600 shadow-lg'
                             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
                     >
@@ -470,7 +470,7 @@ export default function AdminOrdersPage() {
                     </button>
                     <button
                         onClick={() => { setShowDeleted(!showDeleted); if (!showDeleted) setShowCancelled(false); }}
-                        className={`px-4 py-2 rounded-lg text-xs font-medium border transition-all flex items-center gap-2 ${showDeleted
+                        className={`px-4 py-2 rounded-lg text-xs font-medium border transition-all flex items-center gap-2 whitespace-nowrap ${showDeleted
                             ? 'bg-gray-700 text-white border-gray-700 shadow-lg'
                             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
                     >
@@ -528,9 +528,9 @@ export default function AdminOrdersPage() {
 
             {!showCancelled && !showDeleted && (
                 // Kanban Board
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)] min-h-[600px]">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(100vh-280px)] lg:min-h-[600px] h-auto">
                     {/* Pending Column */}
-                    <div className="flex flex-col bg-gray-50/50 rounded-2xl border border-gray-100 shadow-inner overflow-hidden">
+                    <div className="flex flex-col bg-gray-50/50 rounded-2xl border border-gray-100 shadow-inner overflow-hidden h-auto lg:h-full">
                         <div className="p-4 border-b border-gray-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
@@ -541,7 +541,7 @@ export default function AdminOrdersPage() {
                             </div>
                             <FilterBar filters={pendingFilters} setFilters={setPendingFilters} />
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+                        <div className="lg:flex-1 lg:overflow-y-auto p-4 space-y-3 scrollbar-hide">
                             {pendingOrders.map(o => <OrderCard key={o.id} order={o} />)}
                             {pendingOrders.length === 0 && (
                                 <div className="py-12 text-center text-gray-400 text-xs">暂无待联系订单</div>
@@ -550,7 +550,7 @@ export default function AdminOrdersPage() {
                     </div>
 
                     {/* Processing Column */}
-                    <div className="flex flex-col bg-gray-50/50 rounded-2xl border border-gray-100 shadow-inner overflow-hidden">
+                    <div className="flex flex-col bg-gray-50/50 rounded-2xl border border-gray-100 shadow-inner overflow-hidden h-auto lg:h-full">
                         <div className="p-4 border-b border-gray-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
@@ -561,7 +561,7 @@ export default function AdminOrdersPage() {
                             </div>
                             <FilterBar filters={processingFilters} setFilters={setProcessingFilters} />
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+                        <div className="lg:flex-1 lg:overflow-y-auto p-4 space-y-3 scrollbar-hide">
                             {processingOrders.map(o => <OrderCard key={o.id} order={o} />)}
                             {processingOrders.length === 0 && (
                                 <div className="py-12 text-center text-gray-400 text-xs">无处理中订单</div>
@@ -570,7 +570,7 @@ export default function AdminOrdersPage() {
                     </div>
 
                     {/* Completed Column */}
-                    <div className="flex flex-col bg-gray-50/50 rounded-2xl border border-gray-100 shadow-inner overflow-hidden">
+                    <div className="flex flex-col bg-gray-50/50 rounded-2xl border border-gray-100 shadow-inner overflow-hidden h-auto lg:h-full">
                         <div className="p-4 border-b border-gray-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
@@ -581,7 +581,7 @@ export default function AdminOrdersPage() {
                             </div>
                             <FilterBar filters={completedFilters} setFilters={setCompletedFilters} />
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+                        <div className="lg:flex-1 lg:overflow-y-auto p-4 space-y-3 scrollbar-hide">
                             {completedOrders.slice(0, 20).map(o => <OrderCard key={o.id} order={o} />)}
                             {completedOrders.length > 20 && (
                                 <div className="py-4 text-center text-gray-400 text-xs">仅显示最近 20 条</div>

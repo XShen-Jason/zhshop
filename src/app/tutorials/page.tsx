@@ -59,7 +59,7 @@ export default function TutorialsPage() {
                         <Card className="group h-full">
                             <div className="p-4 md:p-8 cursor-pointer">
                                 <div className="flex gap-1.5 md:gap-2 mb-2 md:mb-4 flex-wrap">
-                                    {(t.tags || []).slice(0, 3).map(tag => (
+                                    {(t.tags || []).filter(tag => tag !== 'html-mode').slice(0, 3).map(tag => (
                                         <span key={tag} className="text-[10px] md:text-xs font-bold bg-indigo-50 text-indigo-600 px-2 md:px-3 py-0.5 md:py-1 rounded-full">{tag}</span>
                                     ))}
                                 </div>

@@ -170,7 +170,7 @@ export default function AdminMessagesPage() {
                 <h2 className="text-lg font-bold">消息管理</h2>
                 <button
                     onClick={() => setShowForm(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 whitespace-nowrap"
                 >
                     <Plus size={18} />
                     发布消息
@@ -193,15 +193,15 @@ export default function AdminMessagesPage() {
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-2 mb-2">
                                     {message.type === 'announcement' ? (
-                                        <span className="flex items-center gap-1 text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full">
+                                        <span className="flex items-center gap-1 text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full whitespace-nowrap">
                                             <Megaphone size={12} /> 公告
                                         </span>
                                     ) : message.type === 'user_specific' ? (
-                                        <span className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                        <span className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full whitespace-nowrap">
                                             <UserIcon size={12} /> 私信
                                         </span>
                                     ) : (
-                                        <span className="flex items-center gap-1 text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                                        <span className="flex items-center gap-1 text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full whitespace-nowrap">
                                             <Users size={12} /> 拼团通知
                                         </span>
                                     )}
@@ -244,7 +244,7 @@ export default function AdminMessagesPage() {
                                     <button
                                         type="button"
                                         onClick={() => setMessageType('announcement')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 transition-all ${messageType === 'announcement'
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 transition-all whitespace-nowrap ${messageType === 'announcement'
                                             ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
                                             : 'border-gray-200 text-gray-600 hover:border-gray-300'
                                             }`}
@@ -255,7 +255,7 @@ export default function AdminMessagesPage() {
                                     <button
                                         type="button"
                                         onClick={() => setMessageType('group_notice')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 transition-all ${messageType === 'group_notice'
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 transition-all whitespace-nowrap ${messageType === 'group_notice'
                                             ? 'border-green-600 bg-green-50 text-green-700'
                                             : 'border-gray-200 text-gray-600 hover:border-gray-300'
                                             }`}
@@ -266,7 +266,7 @@ export default function AdminMessagesPage() {
                                     <button
                                         type="button"
                                         onClick={() => setMessageType('user_specific')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 transition-all ${messageType === 'user_specific'
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 transition-all whitespace-nowrap ${messageType === 'user_specific'
                                             ? 'border-blue-600 bg-blue-50 text-blue-700'
                                             : 'border-gray-200 text-gray-600 hover:border-gray-300'
                                             }`}
@@ -365,7 +365,7 @@ export default function AdminMessagesPage() {
                                 <button
                                     type="submit"
                                     disabled={sending}
-                                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap"
                                 >
                                     <Send size={16} />
                                     {sending ? '发送中...' : '发送'}
