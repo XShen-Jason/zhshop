@@ -678,19 +678,56 @@ export default function AdminGroupsPage() {
                             )}
 
                             {g.status === '已锁单' && (
-                                <div className="flex justify-between gap-2">
-                                    <button
-                                        onClick={() => updateStatus(g.id, '进行中')}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap"
-                                    >
-                                        <Unlock size={12} /> 解锁
-                                    </button>
-                                    <button
-                                        onClick={() => updateStatus(g.id, '已结束')}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors whitespace-nowrap"
-                                    >
-                                        <AlertCircle size={12} /> 结束
-                                    </button>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between gap-2">
+                                        <button
+                                            onClick={() => updateStatus(g.id, '进行中')}
+                                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                                        >
+                                            <Unlock size={12} /> 解锁
+                                        </button>
+                                        <button
+                                            onClick={() => updateStatus(g.id, '已结束')}
+                                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors whitespace-nowrap"
+                                        >
+                                            <AlertCircle size={12} /> 结束
+                                        </button>
+                                    </div>
+                                    {/* Manual Renew Button */}
+                                    {g.autoRenew && (g.currentCount >= g.targetCount) && (
+                                        <button
+                                            onClick={async () => {
+                                                const confirmed = await confirm({
+                                                    title: '确认自动续期',
+                                                    message: '即使前一个团未完全结束，此操作也将强制检查并开启下一个拼团（如果符合条件）。确定要执行吗？',
+                                                    confirmText: '立刻执行',
+                                                    cancelText: '取消'
+                                                });
+                                                if (!confirmed) return;
+
+                                                try {
+                                                    const res = await fetch('/api/groups/renew', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ groupId: g.id })
+                                                    });
+                                                    const data = await res.json();
+                                                    if (res.ok) {
+                                                        showToast('自动续期执行成功，新拼团已创建', 'success');
+                                                        fetchGroups(); // Refresh list to see new group
+                                                    } else {
+                                                        showToast(`执行失败: ${data.error}`, 'error');
+                                                    }
+                                                } catch (e) {
+                                                    console.error(e);
+                                                    showToast('网络请求失败', 'error');
+                                                }
+                                            }}
+                                            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border border-purple-100 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors whitespace-nowrap"
+                                        >
+                                            <Repeat size={12} /> 立即自动续期
+                                        </button>
+                                    )}
                                 </div>
                             )}
 

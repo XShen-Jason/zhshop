@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -263,46 +264,14 @@ export async function POST(request: Request) {
                     // 锁团
                     await adminClient.from('group_buys').update({ status: '已锁单' }).eq('id', targetGroupId);
 
+                    // Auto Renew Logic (Modified to use shared helper)
                     if (fullGroup.auto_renew) {
-                        // 获取基础标题
-                        const baseTitle = fullGroup.title.replace(/ #\d+$/, '');
-
-                        // 检查整个系列中是否存在未满员的团
-                        const { data: unfilledGroups } = await adminClient
-                            .from('group_buys')
-                            .select('id, title, current_count, target_count')
-                            .ilike('title', `${baseTitle}%`)
-                            .neq('status', '已结束')
-                            .neq('id', targetGroupId); // Exclude self
-
-                        const hasUnfilledGroup = (unfilledGroups || []).some(
-                            g => g.current_count < g.target_count
-                        );
-
-                        if (!hasUnfilledGroup) {
-                            // 计算批次号
-                            const { count: groupCount } = await adminClient
-                                .from('group_buys')
-                                .select('*', { count: 'exact', head: true })
-                                .ilike('title', `${baseTitle}%`);
-
-                            const batchNumber = (groupCount || 0) + 1;
-                            const newTitle = `${baseTitle} #${batchNumber}`;
-
-                            // 创建新团
-                            await adminClient.from('group_buys').insert({
-                                title: newTitle,
-                                price: fullGroup.price,
-                                description: fullGroup.description,
-                                features: fullGroup.features,
-                                target_count: fullGroup.target_count,
-                                current_count: 0,
-                                status: '进行中',
-                                auto_renew: true,
-                                image_url: fullGroup.image_url,
-                                is_hot: fullGroup.is_hot, // Inherit hot status
-                                parent_group_id: targetGroupId
-                            });
+                        try {
+                            const { checkAndTriggerAutoRenew } = await import('@/lib/group-auto-renew');
+                            await checkAndTriggerAutoRenew(adminClient, targetGroupId);
+                        } catch (renewError) {
+                            console.error('Auto renew failed inside order creation:', renewError);
+                            // Don't fail the order just because renew failed
                         }
                     }
                 }

@@ -462,8 +462,8 @@ export default function AdminContentPage() {
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">简短描述</label>
                                 <textarea
-                                    value={editing?.description || ''}
-                                    onChange={e => setEditing({ ...editing, description: e.target.value })}
+                                    value={editing?.summary || ''}
+                                    onChange={e => setEditing({ ...editing, summary: e.target.value })}
                                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                                     rows={2}
                                     placeholder="用于列表卡片显示的简短介绍..."

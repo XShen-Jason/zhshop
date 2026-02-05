@@ -103,6 +103,7 @@ export async function PUT(request: Request) {
         if (updates.relatedProductId !== undefined) updateData.related_product_id = updates.relatedProductId;
         if (updates.isLocked !== undefined) updateData.is_locked = updates.isLocked;
         if (updates.imageUrl !== undefined) updateData.image_url = updates.imageUrl;
+        if (updates.category) updateData.category = updates.category;
 
         // Handle format via tags if explicitly provided, or if we need to update tags from format
         if (updates.format) {
