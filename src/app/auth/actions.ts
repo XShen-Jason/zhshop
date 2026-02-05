@@ -168,14 +168,18 @@ export async function logout() {
 }
 
 export async function forgotPassword(formData: FormData) {
-    const supabase = await createClient();
+    // Use Admin Client to send email. 
+    // This avoids setting a PKCE code verifier cookie on the client response,
+    // which causes issues if the user opens the email on a different device/browser.
+    // Admin client (service role) sends the link without requiring client-side challenge state.
+    const adminClient = createAdminClient();
     const email = formData.get('email') as string;
 
     // 动态获取当前请求的 Origin，适配预览环境和生产环境
     const headersList = await headers();
     const origin = headersList.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await adminClient.auth.resetPasswordForEmail(email, {
         redirectTo: `${origin}/auth/callback?next=/auth/reset-password`,
     });
 
