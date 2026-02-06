@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
         if (!error) {
             console.log('[AuthCallback] Code exchange success, redirecting to:', next);
-            return redirectToNext(request, origin, next);
+            return redirectToNext(request, origin, next, type);
         } else {
             console.error('[AuthCallback] Code exchange error:', error);
         }
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
         if (!error) {
             console.log('[AuthCallback] Token hash verification success');
-            return redirectToNext(request, origin, next);
+            return redirectToNext(request, origin, next, type);
         } else {
             console.error('[AuthCallback] Token hash verification error:', error);
         }
@@ -49,15 +49,19 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/auth/login?error=验证失败，请重试`);
 }
 
-function redirectToNext(request: Request, origin: string, next: string) {
+function redirectToNext(request: Request, origin: string, next: string, type: EmailOtpType | null) {
     const forwardedHost = request.headers.get('x-forwarded-host');
     const isLocalEnv = process.env.NODE_ENV === 'development';
 
+    // Add verified=true for signup confirmation so login page can show success message
+    const separator = next.includes('?') ? '&' : '?';
+    const finalNext = type === 'signup' ? `${next}${separator}verified=true` : next;
+
     if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
+        return NextResponse.redirect(`${origin}${finalNext}`);
     } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
+        return NextResponse.redirect(`https://${forwardedHost}${finalNext}`);
     } else {
-        return NextResponse.redirect(`${origin}${next}`);
+        return NextResponse.redirect(`${origin}${finalNext}`);
     }
 }

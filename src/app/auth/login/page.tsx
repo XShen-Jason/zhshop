@@ -12,18 +12,25 @@ function LoginForm() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [showWelcome, setShowWelcome] = useState(false);
+    const [emailVerified, setEmailVerified] = useState(false);
 
     // Resend verification states
     const [showResend, setShowResend] = useState(false);
     const [resending, setResending] = useState(false);
     const [resendSuccess, setResendSuccess] = useState(false);
 
-    // 从 URL 获取预填的 email
+    // 从 URL 获取预填的 email 和验证成功状态
     useEffect(() => {
         const emailParam = searchParams.get('email');
+        const verifiedParam = searchParams.get('verified');
+
         if (emailParam) {
             setEmail(emailParam);
             setShowWelcome(true);
+        }
+
+        if (verifiedParam === 'true') {
+            setEmailVerified(true);
         }
     }, [searchParams]);
 
@@ -78,6 +85,16 @@ function LoginForm() {
                     <div className="text-sm">
                         <p className="font-bold mb-1">注册成功！</p>
                         <p>请先到邮箱确认后再登录。邮箱已自动填入。</p>
+                    </div>
+                </div>
+            )}
+
+            {emailVerified && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl flex items-start text-green-700">
+                    <CheckCircle size={18} className="mr-2 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                        <p className="font-bold mb-1">邮箱确认成功！</p>
+                        <p>您的邮箱已验证，请登录您的账号。</p>
                     </div>
                 </div>
             )}
